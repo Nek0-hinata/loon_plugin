@@ -7,6 +7,7 @@
 - `config/Loon_Enhanced.example.lcf`：可公开维护的配置模板，不含订阅凭据或 CA 私钥。
 - `plugins/4KHD_NoAds.lpx`：阻止 4KHD Service Worker 广告注入、Popunder 和图片强制新开页。
 - `plugins/MissAV_NoAds.lpx`：移除 MissAV 播放器点击弹窗、页面广告，并拦截广告跳转域名。
+- `plugins/18Comic_NoAds.lpx`：清理 18Comic 弹层、横幅、浮动及底部广告，并阻止跨域强制弹窗。
 - `docs/SECURITY.md`：敏感信息、DNS 与 MITM 安全注意事项。
 
 ## 使用配置
@@ -37,6 +38,16 @@ https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/MissAV_No
 ```
 
 启用插件并确认 MITM 证书受系统信任，然后彻底关闭并重新打开浏览器。插件只针对已确认的 `/pop` 播放器弹窗和广告域名，不会禁止站内正常页面跳转。
+
+## 安装 18Comic 插件
+
+合并对应 PR 后，可使用以下稳定地址：
+
+```text
+https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/18Comic_NoAds.lpx
+```
+
+启用插件并确认 MITM 证书受系统信任，然后彻底关闭并重新打开浏览器。该插件保留 `18comic.vip` 站内新页面，只阻止脚本新开的跨域页面。
 
 ## 维护原则
 

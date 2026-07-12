@@ -1,0 +1,22 @@
+#!name=18Comic 去广告与防弹窗
+#!desc=清理 18comic.vip 的弹层、横幅、浮动及底部推荐广告，并阻止页面脚本强制新开跨域广告页。
+#!author=Codex
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.2.1(730)
+#!tag=去广告,网页净化,防弹窗
+
+[Rule]
+# 该站近期可观察到 ExoClick；同时覆盖其常见广告投放域名。
+DOMAIN-SUFFIX,exoclick.com,REJECT
+DOMAIN-SUFFIX,exosrv.com,REJECT
+DOMAIN-SUFFIX,exdynsrv.com,REJECT
+DOMAIN-SUFFIX,pemsrv.com,REJECT
+DOMAIN-SUFFIX,magsrv.com,REJECT
+DOMAIN-SUFFIX,afcdn.net,REJECT
+
+[Rewrite]
+# 注入样式和动态清理器；仅在 18Comic 页面内阻止跨域 window.open，保留站内正常新页面。
+^https?:\/\/(?:[^\/]+\.)?18comic\.vip\/.* response-body-replace-regex (?i)<head> <head><style>#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]{display:none!important}</style><script>(()=>{const/**/s='#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true});const/**/o=window.open;window.open=function(u,t,f){try{const/**/a=new/**/URL(u,location.href);if(!/(^|\.)18comic\.vip$/i.test(a.hostname))return(null)}catch(e){return(null)}return(o.call(window,u,t,f))}})();</script>
+
+[Mitm]
+hostname = 18comic.vip,*.18comic.vip
