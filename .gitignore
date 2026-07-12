@@ -1,0 +1,21 @@
+# Local/private Loon configurations
+*.local.lcf
+*.private.lcf
+config/private/
+secrets/
+
+# Certificates and private keys
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileconfig
+
+# Environment and editor files
+.env
+.env.*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
