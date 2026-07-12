@@ -1,0 +1,44 @@
+#!name=网页去广告合集
+#!desc=合并 4KHD、MissAV 与 18Comic 的去广告、防强制跳转规则；各站规则独立匹配。
+#!author=Codex
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.2.1(730)
+#!tag=去广告,网页净化,防跳转
+
+[Rule]
+# 4KHD / 18Comic 共用广告基础设施
+DOMAIN-SUFFIX,pemsrv.com,REJECT
+DOMAIN-SUFFIX,magsrv.com,REJECT
+DOMAIN-SUFFIX,afcdn.net,REJECT
+DOMAIN,pfec.uuss.uk,REJECT
+DOMAIN,online.ssuu.uk,REJECT
+
+# MissAV
+DOMAIN-SUFFIX,wheelroot.com,REJECT
+DOMAIN-SUFFIX,myavlive.com,REJECT
+DOMAIN-SUFFIX,snaptrckr.fun,REJECT
+DOMAIN-SUFFIX,rallytrck.website,REJECT
+DOMAIN-SUFFIX,twinrdengine.com,REJECT
+DOMAIN-SUFFIX,diffusedpassionquaking.com,REJECT
+DOMAIN-SUFFIX,mayzaent.com,REJECT
+
+# 18Comic / ExoClick
+DOMAIN-SUFFIX,exoclick.com,REJECT
+DOMAIN-SUFFIX,exosrv.com,REJECT
+DOMAIN-SUFFIX,exdynsrv.com,REJECT
+
+[Rewrite]
+# 4KHD：阻止广告 Service Worker、动态广告配置和广告渲染器
+^https?:\/\/(?:www\.)?4khd\.com\/interstitial\.js(?:\?.*)?$ reject-200
+^https?:\/\/(?:www\.)?4khd\.com\/js\/(?:config|a1000d)\.js(?:\?.*)?$ reject-200
+^https?:\/\/(?:www\.)?4khd\.com\/.* response-body-replace-regex (?i)<script[^>]*\/interstitial\.js[^>]*><\/script> <script></script> (?i)<head> <head><script>((A,O,h)=>{try{navigator.serviceWorker&&navigator.serviceWorker.getRegistrations().then(x=>x.forEach(r=>r.unregister()));window.caches&&caches.keys().then(x=>x.filter(k=>k==="my-cache"||k==="img-cache").forEach(k=>caches.delete(k)))}catch(e){}EventTarget.prototype.addEventListener=function(t,l,o){if(t==="click"&&typeof(l)==="function"&&/(?:popMagic|exoJsPop|pemsrv|magsrv|splash\.php|extranks|\/index\.html)/.test(Function.prototype.toString.call(l)))return;return(A.call(this,t,l,o))};window.open=function(u,t,f){try{h.href=u;if(/(?:^|\.)(?:pemsrv|magsrv)\.com$|(?:^|\.)afcdn\.net$|^(?:pfec\.uuss|online\.ssuu)\.uk$/.test(h.hostname))return(null)}catch(e){}return(O.call(this,u,t,f))};document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('ins[class^="eas"],ins[class^="adsby"],.centbtd,.ex-over-top,#popmagicldr').forEach(e=>e.remove()),{once:true})})(EventTarget.prototype.addEventListener,window.open,document.createElement("a"));</script>
+
+# MissAV：移除播放器 pop() 绑定、/pop 中转及广告元素
+^https?:\/\/(?:www\.)?missav\.live\/pop(?:\?.*)?$ reject-200
+^https?:\/\/(?:www\.)?missav\.live\/.* response-body-replace-regex \s*@click="pop\(\)"\s* @click="0" \s*@keyup\.space\.window="pop\(\)"\s* @keyup.space.window="0" (?i)<head> <head><style>iframe[src*="myavlive"],iframe[src*="snaptrckr"],iframe[src*="rallytrck"],iframe[src*="mayzaent"],[href*="myavlive.com"]{display:none!important}</style><script>(()=>{const/**/bad=/(?:wheelroot|myavlive|snaptrckr|rallytrck|twinrdengine|diffusedpassionquaking|mayzaent)\./i,clean=()=>document.querySelectorAll("iframe,a,script").forEach(e=>{const/**/u=e.src||e.href||"";bad.test(u)&&e.remove()});document.addEventListener("DOMContentLoaded",()=>{clean();new/**/MutationObserver(clean).observe(document.documentElement,{childList:true,subtree:true})},{once:true});const/**/o=window.open;window.open=function(u,t,f){try{const/**/a=document.createElement("a");a.href=u;if(a.pathname==="/pop"||bad.test(a.hostname))return(null)}catch(e){}return(o.call(window,u,t,f))}})();</script>
+
+# 18Comic：清理已确认广告容器，并阻止脚本新开的跨域页面
+^https?:\/\/(?:[^\/]+\.)?18comic\.vip\/.* response-body-replace-regex (?i)<head> <head><style>#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]{display:none!important}</style><script>(()=>{const/**/s='#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true});const/**/o=window.open;window.open=function(u,t,f){try{const/**/a=new/**/URL(u,location.href);if(!/(^|\.)18comic\.vip$/i.test(a.hostname))return(null)}catch(e){return(null)}return(o.call(window,u,t,f))}})();</script>
+
+[Mitm]
+hostname = 4khd.com,www.4khd.com,missav.live,www.missav.live,18comic.vip,*.18comic.vip
