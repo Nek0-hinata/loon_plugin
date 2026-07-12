@@ -1,0 +1,24 @@
+#!name=4KHD 去广告与防强制跳转
+#!desc=阻止 4KHD 的 Service Worker 广告注入、全链接 Popunder 强制跳转、横幅/插屏广告及统计回传；首次启用后请彻底关闭并重新打开浏览器。
+#!author=Codex
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.2.1(730)
+#!tag=去广告,网页净化,防跳转
+
+[Rule]
+DOMAIN-SUFFIX,pemsrv.com,REJECT
+DOMAIN-SUFFIX,magsrv.com,REJECT
+DOMAIN-SUFFIX,afcdn.net,REJECT
+DOMAIN,pfec.uuss.uk,REJECT
+DOMAIN,online.ssuu.uk,REJECT
+
+[Rewrite]
+# 阻止站点重新安装广告 Service Worker、拉取动态广告配置和广告渲染器
+^https?:\/\/(?:www\.)?4khd\.com\/interstitial\.js(?:\?.*)?$ reject-200
+^https?:\/\/(?:www\.)?4khd\.com\/js\/(?:config|a1000d)\.js(?:\?.*)?$ reject-200
+
+# 从原始 HTML 移除 Service Worker 加载器，并在页面最前面注入一次性清理/防跳转保护
+^https?:\/\/(?:www\.)?4khd\.com\/.* response-body-replace-regex (?i)<script[^>]*\/interstitial\.js[^>]*><\/script> <script></script> (?i)<head> <head><script>((A,O,h)=>{try{navigator.serviceWorker&&navigator.serviceWorker.getRegistrations().then(x=>x.forEach(r=>r.unregister()));window.caches&&caches.keys().then(x=>x.filter(k=>k==="my-cache"||k==="img-cache").forEach(k=>caches.delete(k)))}catch(e){}EventTarget.prototype.addEventListener=function(t,l,o){if(t==="click"&&typeof(l)==="function"&&/(?:popMagic|exoJsPop|pemsrv|magsrv|splash\.php|extranks|\/index\.html)/.test(Function.prototype.toString.call(l)))return;return(A.call(this,t,l,o))};window.open=function(u,t,f){try{h.href=u;if(/(?:^|\.)(?:pemsrv|magsrv)\.com$|(?:^|\.)afcdn\.net$|^(?:pfec\.uuss|online\.ssuu)\.uk$/.test(h.hostname))return(null)}catch(e){}return(O.call(this,u,t,f))};document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('ins[class^="eas"],ins[class^="adsby"],.centbtd,.ex-over-top,#popmagicldr').forEach(e=>e.remove()),{once:true})})(EventTarget.prototype.addEventListener,window.open,document.createElement("a"));</script>
+
+[Mitm]
+hostname = 4khd.com,www.4khd.com
