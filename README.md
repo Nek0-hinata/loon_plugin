@@ -1,11 +1,11 @@
 # Loon 配置与插件
 
-这个仓库维护一份经过脱敏与安全整理的 Loon 配置模板，以及覆盖 4KHD、MissAV 和 18Comic 的合并去广告插件。
+这个仓库维护一份经过脱敏与安全整理的 Loon 配置模板，以及覆盖 4KHD、MissAV、18Comic、Jable、XVideos 和 Pornhub 的合并去广告插件。
 
 ## 目录
 
 - `config/Loon_Enhanced.example.lcf`：可公开维护的配置模板，不含订阅凭据或 CA 私钥。
-- `plugins/Web_NoAds.lpx`：合并 4KHD、MissAV 和 18Comic 的去广告、防强制跳转规则。
+- `plugins/Web_NoAds.lpx`：合并六个目标站点的去广告、防强制跳转规则。
 - `docs/SECURITY.md`：敏感信息、DNS 与 MITM 安全注意事项。
 
 ## 使用配置
