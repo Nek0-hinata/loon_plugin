@@ -1,0 +1,140 @@
+# Public, sanitized Loon configuration template
+# Copy to Loon_Enhanced.local.lcf before inserting private subscription URLs.
+# Never commit subscription credentials, ca-p12, ca-passphrase, proxy passwords, or tokens.
+
+[General]
+# Strict encrypted-DNS mode: system UDP DNS is intentionally omitted.
+doh-server = https://dns.alidns.com/dns-query,https://doh.pub/dns-query
+hijack-dns = *:53
+disconnect-on-policy-change = true
+disable-stun = true
+sni-sniffing = true
+mitm-on-wifi-access = false
+ip-mode = v4-only
+skip-proxy = 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,localhost,*.local,*.lan,*.home.arpa
+bypass-tun = 10.0.0.0/8,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
+allow-wifi-access = false
+wifi-access-http-port = 7222
+wifi-access-socks5-port = 7221
+proxy-test-url = https://cp.cloudflare.com/generate_204
+internet-test-url = http://wifi.vivo.com.cn/generate_204
+test-timeout = 5
+interface-mode = auto
+
+[Proxy]
+
+[Remote Proxy]
+# Replace these URLs only in a *.local.lcf file. Keep skip-cert-verify=false when possible.
+奶昔AnyTLS = https://example.invalid/REPLACE_WITH_PRIVATE_ANYTLS_SUBSCRIPTION,udp=true,block-quic=true,fast-open=default,skip-cert-verify=false,enabled=false
+奶昔SS2022 = https://example.invalid/REPLACE_WITH_PRIVATE_SS2022_SUBSCRIPTION,udp=true,block-quic=true,fast-open=default,skip-cert-verify=false,enabled=false
+奶昔Trojan = https://example.invalid/REPLACE_WITH_PRIVATE_TROJAN_SUBSCRIPTION,udp=true,block-quic=true,fast-open=default,skip-cert-verify=false,enabled=false
+
+[Proxy Chain]
+
+[Proxy Group]
+Available = select,Auto,US,JP,SG,TW,HK,KR,Europe,SouthAmerica,DIRECT,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
+Auto = url-test,ALL_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png
+Domestic = select,DIRECT,Available,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png
+AI = select,US,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png
+YouTube = select,HK,TW,SG,JP,KR,US,Europe,SouthAmerica
+Telegram = select,HK,TW,SG,JP,KR,US,Europe,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png
+Streaming = select,Available,US,JP,SG,TW,HK,KR,Europe,SouthAmerica,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming.png
+HK = url-test,HK_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png
+TW = url-test,TW_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png
+SG = url-test,SG_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png
+JP = url-test,JP_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png
+KR = url-test,KR_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png
+US = url-test,US_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png
+Europe = url-test,Europe_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/European_Union.png
+SouthAmerica = url-test,SouthAmerica_Filter,url=https://cp.cloudflare.com/generate_204,interval=1200,tolerance=100,img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/South_America.png
+
+[Remote Filter]
+ALL_Filter = NameRegex, FilterKey = ".*"
+HK_Filter = NameRegex, FilterKey = "(?i)(香港|港|HK|Hong|Hong Kong)"
+TW_Filter = NameRegex, FilterKey = "(?i)(台湾|台|TW|Taiwan)"
+SG_Filter = NameRegex, FilterKey = "(?i)(新加坡|狮城|SG|Singapore)"
+JP_Filter = NameRegex, FilterKey = "(?i)(日本|东京|大阪|JP|Japan|Tokyo|Osaka)"
+KR_Filter = NameRegex, FilterKey = "(?i)(韩国|首尔|KR|Korea|KOR|Seoul)"
+US_Filter = NameRegex, FilterKey = "(?i)(美国|美西|美东|美中|美南|US|USA|United States|Los Angeles|Seattle|Chicago|New York|Washington|Virginia|Dallas|Miami|Houston|San Francisco|San Jose)"
+Europe_Filter = NameRegex, FilterKey = "(?i)(英国|德国|法国|荷兰|瑞士|俄罗斯|UK|United Kingdom|Germany|France|Netherlands|Switzerland|Russia|London|Frankfurt|Paris|Amsterdam|Zurich|Moscow)"
+SouthAmerica_Filter = NameRegex, FilterKey = "(?i)(巴西|阿根廷|智利|Brazil|Brasil|Argentina|Chile|Sao Paulo|São Paulo|Buenos Aires|Santiago)"
+
+[Rule]
+# Safer default: reject all QUIC so applications fall back to policy-routed TCP/TLS.
+PROTOCOL,QUIC,REJECT
+DOMAIN-SUFFIX,speedtest.net,DIRECT
+DOMAIN-SUFFIX,invite.linuxdo.org,DIRECT
+DOMAIN-SUFFIX,openai.com,AI
+DOMAIN-SUFFIX,chatgpt.com,AI
+DOMAIN-SUFFIX,oaistatic.com,AI
+DOMAIN-SUFFIX,oaiusercontent.com,AI
+DOMAIN-SUFFIX,chat.com,AI
+DOMAIN-SUFFIX,anthropic.com,AI
+DOMAIN-SUFFIX,claude.ai,AI
+DOMAIN-SUFFIX,gemini.google.com,AI
+DOMAIN-SUFFIX,generativelanguage.googleapis.com,AI
+DOMAIN-SUFFIX,aistudio.google.com,AI
+DOMAIN-SUFFIX,copilot.microsoft.com,AI
+DOMAIN-SUFFIX,bingapis.com,AI
+GEOIP,CN,Domestic
+FINAL,Available
+
+[Remote Rule]
+https://rule.kelee.one/Loon/AdvertisingLite.lsr,policy=REJECT,tag=AdvertisingLite,enabled=true
+https://rule.kelee.one/Loon/BlockHttpDNS.lsr,policy=REJECT,tag=BlockHttpDNS,enabled=true
+https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/rule/AI.list,policy=AI,tag=AI,enabled=true
+https://rule.kelee.one/Loon/Lan.lsr,policy=DIRECT,tag=Lan,enabled=true
+https://rule.kelee.one/Loon/AppStore.lsr,policy=Domestic,tag=AppStore,enabled=true
+https://rule.kelee.one/Loon/AppleID.lsr,policy=Domestic,tag=AppleID,enabled=true
+https://rule.kelee.one/Loon/iCloud.lsr,policy=Domestic,tag=iCloud,enabled=true
+https://rule.kelee.one/Loon/FindMy.lsr,policy=Domestic,tag=FindMy,enabled=true
+https://rule.kelee.one/Loon/TestFlight.lsr,policy=Domestic,tag=TestFlight,enabled=true
+https://rule.kelee.one/Loon/WeChat.lsr,policy=Domestic,tag=WeChat,enabled=true
+https://rule.kelee.one/Loon/AliPay.lsr,policy=Domestic,tag=AliPay,enabled=true
+https://rule.kelee.one/Loon/Alibaba.lsr,policy=Domestic,tag=Alibaba,enabled=true
+https://rule.kelee.one/Loon/JingDong.lsr,policy=Domestic,tag=JingDong,enabled=true
+https://rule.kelee.one/Loon/Tencent.lsr,policy=Domestic,tag=Tencent,enabled=true
+https://rule.kelee.one/Loon/ByteDance.lsr,policy=Domestic,tag=ByteDance,enabled=true
+https://rule.kelee.one/Loon/BiliBili.lsr,policy=Domestic,tag=BiliBili,enabled=true
+https://rule.kelee.one/Loon/GaoDe.lsr,policy=Domestic,tag=GaoDe,enabled=true
+https://rule.kelee.one/Loon/Baidu.lsr,policy=Domestic,tag=Baidu,enabled=true
+https://rule.kelee.one/Loon/XiaoHongShu.lsr,policy=Domestic,tag=XiaoHongShu,enabled=true
+https://rule.kelee.one/Loon/Weibo.lsr,policy=Domestic,tag=Weibo,enabled=true
+https://rule.kelee.one/Loon/ChinaMedia.lsr,policy=Domestic,tag=ChinaMedia,enabled=true
+https://rule.kelee.one/Loon/SteamCN.lsr,policy=Domestic,tag=SteamCN,enabled=true
+https://rule.kelee.one/Loon/Download.lsr,policy=Domestic,tag=Download,enabled=true
+https://rule.kelee.one/Loon/ChinaMax.lsr,policy=Domestic,tag=ChinaMax,enabled=true
+https://rule.kelee.one/Loon/ChinaIPs.lsr,policy=Domestic,tag=ChinaIPs,enabled=true
+https://rule.kelee.one/Loon/PrimeVideo.lsr,policy=US,tag=PrimeVideo,enabled=true
+https://rule.kelee.one/Loon/PlayStation.lsr,policy=HK,tag=PlayStation,enabled=true
+https://rule.kelee.one/Loon/Netflix.lsr,policy=SG,tag=Netflix,enabled=true
+https://rule.kelee.one/Loon/Reddit.lsr,policy=HK,tag=Reddit,enabled=true
+https://rule.kelee.one/Loon/Spotify.lsr,policy=DIRECT,tag=Spotify,enabled=true
+https://rule.kelee.one/Loon/Steam.lsr,policy=HK,tag=Steam,enabled=true
+https://rule.kelee.one/Loon/Google.lsr,policy=US,tag=Google,enabled=true
+https://rule.kelee.one/Loon/YouTube.lsr,policy=YouTube,tag=YouTube,enabled=true
+https://raw.githubusercontent.com/Loon0x00/LoonLiteRules/main/proxy/Telegram.list,policy=Telegram,tag=Telegram,enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Loon/Proxy/Proxy.list,policy=Available,tag=Global,enabled=true
+
+[Rewrite]
+
+[Script]
+
+[Plugin]
+https://kelee.one/Tool/Loon/Lpx/Taobao_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/JD_Price.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Zhihu_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Weixin_Official_Accounts_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx,pin=true,enabled=false
+https://kelee.one/Tool/Loon/Lpx/Spotify_lyrics_translation.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Weixin_external_links_unlock.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/JD_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Amap_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/Bilibili_remove_ads.lpx,policy=DIRECT,enabled=true
+https://kelee.one/Tool/Loon/Lpx/BaiduNetDisk_remove_ads.lpx,enabled=true
+https://kelee.one/Tool/Loon/Lpx/AppleWeatherEnhancer.lpx,enabled=true
+https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/4KHD_NoAds.lpx,enabled=true
+
+[Mitm]
+# Generate and keep CA material locally in Loon. Never commit ca-p12 or ca-passphrase.
+skip-server-cert-verify = false
