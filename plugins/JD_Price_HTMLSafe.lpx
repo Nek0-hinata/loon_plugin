@@ -1,0 +1,13 @@
+#!name=京东比价·HTML修正版
+#!desc=保留慢慢买京东比价功能，修复价格字段和错误提示的HTML转义。需要在Loon中同时保存本地脚本JD_Price.js；停用原京东比价插件，避免重复执行。
+#!author=wf021325[https://github.com/wf021325], githubdulong[https://github.com/githubdulong], mw418[https://github.com/mw418]; HTML修复=Codex
+#!tag=功能增强
+#!loon_version=3.4.0(962)
+#!date=2026-09-13
+
+[Script]
+http-request ^https?:\/\/apapia-sqk-weblogic\.manmanbuy\.com\/baoliao\/center\/menu$ script-path=JD_Price.js, requires-body=true, timeout=10, tag=捕获令牌
+http-response ^https?:\/\/in\.m\.jd\.com\/product\/graphext\/\d+\.html script-path=JD_Price.js, requires-body=true, timeout=10, tag=京东比价
+
+[MitM]
+hostname=in.m.jd.com, apapia-sqk-weblogic.manmanbuy.com
