@@ -1,71 +1,28 @@
 #!name=网页去广告合集
-#!desc=合并 4KHD、MissAV、18Comic、Jable、XVideos 与 Pornhub 的去广告、防强制跳转规则；各站规则独立匹配。
+#!desc=在插件设置中分别开关五个站点。PixiBB 支持 hub、sexy、cosplay 的推广脚本、赞助横幅和跳转拦截。需同时保存本地脚本 Web_NoAds.js；修改开关后重新加载网页。
 #!author=Codex
 #!system=iOS,iPadOS,macOS
-#!loon_version=3.2.1(730)
+#!loon_version=3.5.0
 #!tag=去广告,网页净化,防跳转
+#!date=2026-09-13
 
-[Rule]
-# 4KHD / 18Comic 共用广告基础设施
-DOMAIN-SUFFIX,pemsrv.com,REJECT
-DOMAIN-SUFFIX,magsrv.com,REJECT
-DOMAIN-SUFFIX,afcdn.net,REJECT
-DOMAIN,pfec.uuss.uk,REJECT
-DOMAIN,online.ssuu.uk,REJECT
+[Argument]
+fourkhd = switch,true,tag=4KHD,desc=开启去广告与防推广跳转
+jable = switch,true,tag=Jable,desc=开启去广告与防推广跳转
+xvideos = switch,true,tag=XVideos,desc=开启去广告与防推广跳转
+pornhub = switch,true,tag=Pornhub,desc=开启去广告与防推广跳转
+pixibb = switch,true,tag=PixiBB,desc=开启去广告与防推广跳转
 
-# MissAV
-DOMAIN-SUFFIX,wheelroot.com,REJECT
-DOMAIN-SUFFIX,myavlive.com,REJECT
-DOMAIN-SUFFIX,snaptrckr.fun,REJECT
-DOMAIN-SUFFIX,rallytrck.website,REJECT
-DOMAIN-SUFFIX,twinrdengine.com,REJECT
-DOMAIN-SUFFIX,diffusedpassionquaking.com,REJECT
-DOMAIN-SUFFIX,mayzaent.com,REJECT
-
-# 18Comic / ExoClick
-DOMAIN-SUFFIX,exoclick.com,REJECT
-DOMAIN-SUFFIX,exosrv.com,REJECT
-DOMAIN-SUFFIX,exdynsrv.com,REJECT
-
-# Jable / XVideos / Pornhub 广告基础设施
-DOMAIN-SUFFIX,trafficjunky.net,REJECT
-DOMAIN-SUFFIX,adtng.com,REJECT
-DOMAIN-SUFFIX,dzhjmp.com,REJECT
-DOMAIN-SUFFIX,orbsrv.com,REJECT
-DOMAIN-SUFFIX,ackcdn.net,REJECT
-DOMAIN-SUFFIX,aucdn.net,REJECT
-DOMAIN-SUFFIX,aacdn.net,REJECT
-DOMAIN-SUFFIX,rtbix.com,REJECT
-DOMAIN-SUFFIX,ad1n.net,REJECT
-DOMAIN-SUFFIX,rtbsuperhub.com,REJECT
-DOMAIN-SUFFIX,tjk-njk.com,REJECT
-DOMAIN-SUFFIX,zline0.com,REJECT
-DOMAIN-SUFFIX,dszkvm.com,REJECT
-DOMAIN-SUFFIX,ktkjmp.com,REJECT
-
-[Rewrite]
-# 4KHD：阻止广告 Service Worker、动态广告配置和广告渲染器
-^https?:\/\/(?:www\.)?4khd\.com\/interstitial\.js(?:\?.*)?$ reject-200
-^https?:\/\/(?:www\.)?4khd\.com\/js\/(?:config|a1000d)\.js(?:\?.*)?$ reject-200
-^https?:\/\/(?:www\.)?4khd\.com\/.* response-body-replace-regex (?i)<script[^>]*\/interstitial\.js[^>]*><\/script> <script></script> (?i)<head> <head><script>((A,O,h)=>{try{navigator.serviceWorker&&navigator.serviceWorker.getRegistrations().then(x=>x.forEach(r=>r.unregister()));window.caches&&caches.keys().then(x=>x.filter(k=>k==="my-cache"||k==="img-cache").forEach(k=>caches.delete(k)))}catch(e){}EventTarget.prototype.addEventListener=function(t,l,o){if(t==="click"&&typeof(l)==="function"&&/(?:popMagic|exoJsPop|pemsrv|magsrv|splash\.php|extranks|\/index\.html)/.test(Function.prototype.toString.call(l)))return;return(A.call(this,t,l,o))};window.open=function(u,t,f){try{h.href=u;if(/(?:^|\.)(?:pemsrv|magsrv)\.com$|(?:^|\.)afcdn\.net$|^(?:pfec\.uuss|online\.ssuu)\.uk$/.test(h.hostname))return(null)}catch(e){}return(O.call(this,u,t,f))};document.addEventListener("DOMContentLoaded",()=>document.querySelectorAll('ins[class^="eas"],ins[class^="adsby"],.centbtd,.ex-over-top,#popmagicldr').forEach(e=>e.remove()),{once:true})})(EventTarget.prototype.addEventListener,window.open,document.createElement("a"));</script>
-
-# MissAV：移除播放器 pop() 绑定、/pop 中转及广告元素
-^https?:\/\/(?:www\.)?missav\.live\/pop(?:\?.*)?$ reject-200
-^https?:\/\/(?:www\.)?missav\.live\/.* response-body-replace-regex \s*@click="pop\(\)"\s* @click="0" \s*@keyup\.space\.window="pop\(\)"\s* @keyup.space.window="0" (?i)<head> <head><style>iframe[src*="myavlive"],iframe[src*="snaptrckr"],iframe[src*="rallytrck"],iframe[src*="mayzaent"],[href*="myavlive.com"]{display:none!important}</style><script>(()=>{const/**/bad=/(?:wheelroot|myavlive|snaptrckr|rallytrck|twinrdengine|diffusedpassionquaking|mayzaent)\./i,clean=()=>document.querySelectorAll("iframe,a,script").forEach(e=>{const/**/u=e.src||e.href||"";bad.test(u)&&e.remove()});document.addEventListener("DOMContentLoaded",()=>{clean();new/**/MutationObserver(clean).observe(document.documentElement,{childList:true,subtree:true})},{once:true});const/**/o=window.open;window.open=function(u,t,f){try{const/**/a=document.createElement("a");a.href=u;if(a.pathname==="/pop"||bad.test(a.hostname))return(null)}catch(e){}return(o.call(window,u,t,f))}})();</script>
-
-# 18Comic：清理已确认广告容器，并阻止脚本新开的跨域页面
-^https?:\/\/(?:[^\/]+\.)?18comic\.vip\/.* response-body-replace-regex (?i)<head> <head><style>#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]{display:none!important}</style><script>(()=>{const/**/s='#billboard-modal,#guide-modal,.modal-backdrop.fade.in,.div-bf-pv,.footer-pad,.footer-container,.float-right-daily,.float-right-image,.blog_adv,.top_adv,.ipprtcnt,[data-group^="album_related"],[data-group^="all_bottom"],[data-group="album_detail"],[id*="exo-native-widget"]',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true});const/**/o=window.open;window.open=function(u,t,f){try{const/**/a=new/**/URL(u,location.href);if(!/(^|\.)18comic\.vip$/i.test(a.hostname))return(null)}catch(e){return(null)}return(o.call(window,u,t,f))}})();</script>
-
-# Jable：清理播放器、ASG/Exo、AFCDN、横幅及侧栏广告
-^https?:\/\/(?:www\.)?jable\.tv\/.* response-body-replace-regex (?i)<head> <head><style>.plyr__ads,.asg-interstitial,[id^="asg-"],[id^="exo-native-widget-"],[id^="exoNativeWidget"],div:has(>div>img[src*="tapioni.com/ab-banner.png"]),section:has(img[src*=".afcdn.net"]),section.video-info>div.text-center>ins,section.video-info>div.text-center>iframe,.right-sidebar>div.text-center>iframe{display:none!important}</style><script>(()=>{const/**/s='.plyr__ads,.asg-interstitial,[id^="asg-"],[id^="exo-native-widget-"],[id^="exoNativeWidget"],div:has(>div>img[src*="tapioni.com/ab-banner.png"]),section:has(img[src*=".afcdn.net"]),section.video-info>div.text-center>ins,section.video-info>div.text-center>iframe,.right-sidebar>div.text-center>iframe',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true})})();</script>
-
-# XVideos：清理播放器广告、页头/页尾广告和 Exo 原生广告
-^https?:\/\/(?:www\.)?xvideos\.com\/.* response-body-replace-regex (?i)<head> <head><style>#hlsplayer>.videoad-base,#ad-header-mobile-contener,#ad-footer,.exo-ad-ins-div.exo-ad-playersiderectangle,.exo-ad-ins-container.ad-support-desktop,.thumb-ad.thumb-nat-ad.thumb-nat-exo-ad,a.ignore-popunder[href^="https://s."]{display:none!important}</style><script>(()=>{const/**/s='#hlsplayer>.videoad-base,#ad-header-mobile-contener,#ad-footer,.exo-ad-ins-div.exo-ad-playersiderectangle,.exo-ad-ins-container.ad-support-desktop,.thumb-ad.thumb-nat-ad.thumb-nat-exo-ad,a.ignore-popunder[href^="https://s."]',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true})})();</script>
-
-# Pornhub：阻止广告接口/投放脚本，移除 TrafficJunky 广告及 popunder 标记
-^https?:\/\/(?:www\.)?pornhub\.com\/_xa\/ads(?:_batch)?(?:\?.*)?$ reject-200
-^https?:\/\/static\.trafficjunky\.com\/invocation\/(?:embeddedads|popunder)\/.*$ reject-200
-^https?:\/\/(?:www\.)?pornhub\.com\/.* response-body-replace-regex \bjs-popUnder\b js-noPopUnder (?i)<head> <head><style>ins.adsbytrafficjunky,#popsByTrafficJunky,#pb_iframe,.sideAds,.home-ad-container,.browse-ad-container,.playlist-ad-container,.communityAds,.photo-ad-container,#advertisementBox,.ad_box,.js-nativeTjVideoGrid.js_promoItem{display:none!important}</style><script>(()=>{const/**/s='ins.adsbytrafficjunky,#popsByTrafficJunky,#pb_iframe,.sideAds,.home-ad-container,.browse-ad-container,.playlist-ad-container,.communityAds,.photo-ad-container,#advertisementBox,.ad_box,.js-nativeTjVideoGrid.js_promoItem',c=()=>document.querySelectorAll(s).forEach(e=>e.remove());document.addEventListener("DOMContentLoaded",()=>{c();new/**/MutationObserver(c).observe(document.documentElement,{childList:true,subtree:true})},{once:true})})();</script>
+[Script]
+# 关闭站点时同时停止该站点的请求拦截与正文处理。无全局域名 REJECT。
+http-request ^https?:\/\/(?:www\.)?4khd\.com/(?:interstitial\.js|js/a1000d\.js)(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], tag=4KHD广告请求
+http-response ^https?:\/\/(?:www\.)?4khd\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], requires-body=true, tag=4KHD网页净化
+http-response ^https?:\/\/(?:www\.)?jable\.tv/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={jable}, argument=[{jable}], requires-body=true, tag=Jable网页净化
+http-response ^https?:\/\/(?:www\.)?xvideos\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={xvideos}, argument=[{xvideos}], requires-body=true, tag=XVideos网页净化
+http-request ^https?:\/\/(?:www\.)?pornhub\.com/_xa/ads(?:_batch)?(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], tag=Pornhub广告请求
+http-response ^https?:\/\/(?:www\.)?pornhub\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], requires-body=true, tag=Pornhub网页净化
+http-request ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/promotion/(?:sexy-cosplay|sexy-girls)/?(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], tag=PixiBB广告请求
+http-response ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], requires-body=true, tag=PixiBB网页净化
 
 [Mitm]
-hostname = 4khd.com,www.4khd.com,missav.live,www.missav.live,18comic.vip,*.18comic.vip,jable.tv,www.jable.tv,xvideos.com,www.xvideos.com,pornhub.com,www.pornhub.com,static.trafficjunky.com
+hostname = 4khd.com,www.4khd.com,jable.tv,www.jable.tv,xvideos.com,www.xvideos.com,pornhub.com,www.pornhub.com,hub.pixibb.com,sexy.pixibb.com,cosplay.pixibb.com
