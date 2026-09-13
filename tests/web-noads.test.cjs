@@ -135,6 +135,67 @@ test('4KHD retains legitimate index navigation and media popups while blocking k
     }
 });
 
+test('4KHD keeps native search forms and allows both search routes and worker configuration', () => {
+    // Reduced from the public home/search markup inspected on 2026-09-14.
+    const form = '<form role="search" method="get" action="https://www.4khd.com/" class="wp-block-search">' +
+        '<input type="search" id="wp-block-search__input-1" name="s" value="test" required />' +
+        '<button type="submit" class="wp-block-search__button">Search</button></form>';
+    const page = '<html><head><script src="/js/config.js"></script></head><body>' + form + '</body></html>';
+    for (const url of ['https://www.4khd.com/', 'https://www.4khd.com/?s=test',
+        'https://www.4khd.com/?s=%E6%B5%8B%E8%AF%95&paged=2', 'https://www.4khd.com/search/test',
+        'https://www.4khd.com/search/test/page/2/']) {
+        assert.deepEqual(stage(url, null), {}, url);
+        const result = rewrite(url, page);
+        assert.ok(result.includes(form), url);
+        assert.ok(result.includes('<script src="/js/config.js"></script>'), url);
+    }
+    for (const url of ['https://www.4khd.com/js/config.js', 'https://4khd.com/js/config.js?v=1',
+        'https://www.4khd.com/wp-includes/js/jquery/jquery.min.js?ver=3.6.1',
+        'https://www.4khd.com/wp-content/cache/min/1/search.js']) {
+        assert.deepEqual(stage(url, null), {}, url);
+        assert.deepEqual(stage(url, { body: 'const config={html:"<head>"};',
+            headers: { 'Content-Type': 'application/javascript' } }), {}, url);
+    }
+});
+
+test('4KHD leaves search button and form event handlers attached with their original options', () => {
+    const { context, listeners } = run4khd();
+    const form = new context.EventTarget(), button = new context.EventTarget();
+    const submit = function (event) { this.lastSearch = event.query; };
+    const click = function () { this.clicked = true; };
+    const options = { capture: true, once: true };
+    form.addEventListener('submit', submit, options);
+    button.addEventListener('click', click, false);
+    for (const [target, type, listener, option] of [[form, 'submit', submit, options], [button, 'click', click, false]]) {
+        const binding = listeners.find(item => item.target === target && item.args[0] === type);
+        assert.ok(binding);
+        assert.equal(binding.args[1], listener);
+        assert.equal(binding.args[2], option);
+        binding.args[1].call(target, { query: 'test' });
+    }
+    assert.equal(form.lastSearch, 'test');
+    assert.equal(button.clicked, true);
+});
+
+test('MissAV remains outside this plugin and its player layout attributes are never rewritten', () => {
+    // The old whitespace-consuming pop() replacement corrupted this real player wrapper.
+    const wrapper = '<div\n  @click="pop()"\n  @keyup.space.window="pop()"\n  class="aspect-w-16 aspect-h-9"\n>' +
+        '<video controls></video></div>';
+    const body = '<html><head><link rel="stylesheet" href="/build/assets/app.css">' +
+        '<script src="/build/assets/app.js"></script></head><body>' + wrapper + '</body></html>';
+    const response = { body, status: 200, headers: { 'Content-Type': 'text/html' } };
+    for (const host of ['missav.live', 'www.missav.live']) {
+        for (const resource of ['/', '/detail', '/build/assets/app.css', '/build/assets/app.js', '/fonts/site.woff2']) {
+            const url = 'https://' + host + resource;
+            assert.deepEqual(stage(url, null), {}, url);
+            assert.deepEqual(stage(url, response), {}, url);
+            assert.deepEqual(handle({ url }, response, defaults), {}, url);
+            assert.equal(rewrite(url, body), body, url);
+        }
+    }
+    assert.doesNotMatch(plugin.split('[Mitm]')[1], /missav/i);
+});
+
 test('4KHD removes only the audited ad worker and waits for cache cleanup before reload', async () => {
     const ad = { scriptURL: 'https://www.4khd.com/interstitial.js?v=1' };
     const other = { scriptURL: 'https://www.4khd.com/offline.js' };
