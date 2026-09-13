@@ -38,8 +38,10 @@
 
 ## PixiBB 插件维护
 
-2026-08-16 的公开静态 HTML 显示，`hub.pixibb.com` 与 `sexy.pixibb.com` 会在全页点击监听中通过 `window.open()` 轮流打开 `/promotion/sexy-cosplay/` 与 `/promotion/sexy-girls/`；两个中转页再通过 `window.location.href` 跳到 `happylength.com`。插件只替换这条明确的推广弹窗调用，同时拒绝两个中转路径和当前最终跳转域名，不拦截正常站内链接。
+2026-09-13 重新检查的公开静态 HTML 显示，`hub.pixibb.com`、`sexy.pixibb.com` 与 `cosplay.pixibb.com` 使用同一类独立推广脚本：整页点击监听通过 `window.open()` 轮流打开 `/promotion/sexy-cosplay/` 与 `/promotion/sexy-girls/`，已检查的中转页再通过 `window.location.href` 跳到 `happylength.com`。开启 PixiBB 时，插件移除同时包含 `pixibb_ad_cooldown`、`adUrls`、`initAdListeners`、`window.open(targetUrl,...)` 的已识别推广脚本，拦截两个中转路径，并在页面内保护弹窗及推广链接点击。只隐藏带 `sponsored` 标记且目标为 `filmxy.vip/ref/` 的已核实横幅，不隐藏其外围内容区域。
 
-视频页使用 `myvidplay.com` iframe（当前会转到 `playmogo.com`），同时加载 `cdn.plyr.io`、站内 `premium-video-player.js` 和 `/wp-json/pixibb/v1/video-direct`。这些播放器、媒体和接口域名不加入拒绝规则，也不加入正文替换；PixiBB 的正文替换只匹配广告脚本中唯一的 `window.open(targetUrl, "_blank")`，以保留免费 iframe 播放、Plyr 直连播放和下载切换逻辑。
+本次检查的 sexy、cosplay 视频页保留了 `myvidplay.com` iframe、`cdn.plyr.io`、站内 `premium-video-player.js` 与 `/wp-json/pixibb/v1/video-direct`。这些资源及此前记录的 `playmogo.com` 不进入广告拦截范围。核对了改写前后的链接、iframe 和播放器脚本，未执行视频播放或付费账号功能操作。
+
+插件在 Loon 3.5.0 中使用 `[Argument]` 与脚本的 `enable={参数名}` 实现五站独立开关，移除了无条件的全局广告域名拒绝。共享域名过滤现在作用于启用网页的资源标签及弹窗，不是全设备流量拒绝。关闭开关后不会再执行本站的请求或响应脚本；已加载页面需要重新加载，其他插件或油猴脚本仍按其自身设置运行。插件不主动发起网络请求、不保存用户数据，也不设置持久推广冷却 Cookie。
 
 站点更换资源路径、广告域名或混淆代码后，需要重新进行静态审计。不要通过全局禁止所有外域跳转来修复，否则会破坏正常下载链接和图床。

@@ -5,7 +5,7 @@
 ## 目录
 
 - `config/Loon_Enhanced.example.lcf`：可公开维护的配置模板，不含订阅凭据或 CA 私钥。
-- `plugins/Web_NoAds.lpx`：合并五个目标站点的去广告、防强制跳转规则。
+- `plugins/Web_NoAds.lpx` 与 `scripts/Web_NoAds.js`：合并五个目标站点的去广告、防推广跳转，可在插件内分别开关。
 - `plugins/JD_Price_HTMLSafe.lpx` 与 `scripts/JD_Price.js`：保留慢慢买京东比价功能的 HTML 拼接修正版。
 - `docs/SECURITY.md`：敏感信息、DNS 与 MITM 安全注意事项。
 
@@ -20,13 +20,17 @@
 
 ## 安装合并插件
 
-合并本仓库 PR 后，可使用以下稳定地址：
+适用于 Loon 3.5.0。将 `scripts/Web_NoAds.js` 保存到 Loon 可引用的本地脚本中，名称保持 `Web_NoAds.js`，再导入或替换 `plugins/Web_NoAds.lpx`。**两个文件都需要传入 Loon，单独导入 LPX 不会自动安装 JS。** 仓库为私有时，GitHub raw 地址不能供 Loon 匿名下载，使用本地文件即可。
 
-```text
-https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Web_NoAds.lpx
-```
+在“网页去广告合集”的插件设置中，分别控制 **4KHD、Jable、XVideos、Pornhub、PixiBB**，默认全部开启。PixiBB 开关同时控制 `hub.pixibb.com`、`sexy.pixibb.com`、`cosplay.pixibb.com`。保存后重新加载网页，已打开页面里的旧脚本不会被开关自动撤回。
 
-启用插件后，确认 Loon MITM 证书已受系统信任，并删除或停用原来的三个独立插件，避免重复改写。首次访问 4KHD 时，插件会注销旧 Service Worker，并在需要时自动刷新一次以解除旧控制。如仍停留在 `pfec.uuss.uk`，返回 4KHD 再打开一次；只有仍然循环跳转时才需要清除一次对应网站数据。
+开关同时控制本站的广告请求拦截与正文净化。为了让各站点真正独立，已移除原来的全局广告域名 REJECT；改为在开启的网页中移除已识别的广告资源、隐藏广告及阻止推广弹窗，保留第一方广告接口的请求拦截。这不会全局拒绝所有动态跨域广告连接。其他插件、主配置的去广告规则及独立油猴脚本不受这些开关控制。
+
+PixiBB 会移除已核实的整页点击推广脚本，隐藏带 `sponsored` 标记的 Filmxy 推荐横幅和已知推广链接，并拦截推广弹窗、点击和两个推广中转路径。视频 iframe、Plyr、`premium-video-player.js`、`/wp-json/pixibb/v1/video-direct` 均保持原样。插件不写入持久冷却 Cookie，因此不会用长效 Cookie 干扰后续关闭开关。
+
+启用插件后，确认 Loon MITM 证书已受系统信任，并停用旧版本及重复站点插件。站点开关控制本插件的改写行为，MITM 主机名列表仍由插件统一声明。首次访问 4KHD 时，只注销已识别的广告 Service Worker，并在缓存清理后按需刷新；`config.js` 继续放行。
+
+检查：`node --test tests/web-noads.test.cjs`，包含五站点的 32 种开关组合、请求拦截、PixiBB 推广及视频保护。另核对公开静态页面，未执行真实播放或手机 UI 测试。参数及脚本格式依据 [Loon 插件文档](https://nsloon.app/docs/Plugin/) 和 [旧版 Script 文档](https://nsloon.app/docs/Script/)。
 
 ## 安装 PixiBB 油猴脚本
 
