@@ -177,6 +177,36 @@ test('4KHD leaves search button and form event handlers attached with their orig
     assert.equal(button.clicked, true);
 });
 
+test('4KHD repairs worker-dependent image URLs without changing size, lazy loading or gallery links', () => {
+    const old = 'https://i0.wp.com/pic.4khd.com/-example/albuml/AAAAAA/idCNcBGAsHYQ/w1300-rw/cover.webp?w=1300&amp;quality=90';
+    const fixed = 'https://i0.wp.com/yt4.googleusercontent.com/-example/albumI/AAAAAA/idCNcBGAsYHQ/w1300-rw/cover.webp?w=1300&amp;quality=90';
+    const body = '<html><head><meta property="og:image" content="' + old + '"></head><body>' +
+        '<a class="imageLink" href="' + old + '"><IMG loading="lazy" decoding="async" width="1300" height="1500" SRC="' + old + '"></a>' +
+        '<img src="/placeholder.svg" data-src=\'' + old + '\' data-original="' + old + '"></body></html>';
+    const result = rewrite('https://www.4khd.com/content/example.html', body);
+    assert.ok(result.includes('<meta property="og:image" content="' + fixed + '">'));
+    assert.ok(result.includes('<a class="imageLink" href="' + fixed + '"><IMG loading="lazy" decoding="async" width="1300" height="1500" SRC="' + fixed + '"></a>'));
+    assert.ok(result.includes('<img src="/placeholder.svg" data-src=\'' + fixed + '\' data-original="' + fixed + '">'));
+    assert.doesNotMatch(result, /i0\.wp\.com\/pic\.4khd\.com\//);
+    assert.deepEqual(stage(fixed.replace(/&amp;/g, '&'), null), {});
+    assert.equal(rewrite('https://www.4khd.com/', body, { fourkhd: false }), body);
+});
+
+test('4KHD image repair is restricted to actual image attributes and the identified proxy path', () => {
+    const old = 'https://i0.wp.com/pic.4khd.com/-example/id/AAAAAA/hashAsYHQ/w1300-rw/cover.webp';
+    const unchanged = '<!-- <img src="' + old + '"> --><script>const sample=\'<img src="' + old + '">\';</script>' +
+        '<style>.x{background:url("' + old + '")}</style><div data-url="' + old + '"></div>' +
+        '<img src="https://i0.wp.com/example.org/cover.webp"><img src="https://i0.wp.com.example.org/pic.4khd.com/-example/id/AAAAAA/cover.webp">' +
+        '<img src="https://i0.wp.com/pic.4khd.com/logo.webp"><img src="https://img.afcdn.net/cover.jpg">' +
+        '<a href="/?s=test">search</a><script src="/js/config.js"></script>';
+    const page = '<html><head></head><body>' + unchanged + '</body></html>';
+    assert.ok(rewrite('https://www.4khd.com/', page).endsWith('<body>' + unchanged + '</body></html>'));
+    for (const host of ['jable.tv', 'www.xvideos.com', 'www.pornhub.com', 'hub.pixibb.com', 'missav.live']) {
+        const image = '<img src="' + old + '">';
+        assert.ok(rewrite('https://' + host + '/', '<html><head></head><body>' + image + '</body></html>').includes(image));
+    }
+});
+
 test('MissAV remains outside this plugin and its player layout attributes are never rewritten', () => {
     // The old whitespace-consuming pop() replacement corrupted this real player wrapper.
     const wrapper = '<div\n  @click="pop()"\n  @keyup.space.window="pop()"\n  class="aspect-w-16 aspect-h-9"\n>' +
@@ -239,6 +269,21 @@ test('PixiBB removes its audited promotion call and preserves player APIs and fr
         assert.deepEqual(stage(url, null), {});
         assert.deepEqual(stage(url, { body: 'untouched' }), {});
     }
+});
+
+test('PixiBB removes the identified A-Ads frame only on enabled PixiBB pages', () => {
+    const ad = '<iframe data-aa=2426655 src=//ad.a-ads.com/2426655/?size=320x50 style="width:320px;height:50px"></iframe>';
+    const player = '<iframe src="https://myvidplay.com/e/example"></iframe>';
+    const ordinary = '<iframe src="https://ad.a-ads.com.example.org/help"></iframe>';
+    const body = '<html><head></head><body><div id="frame">' + ad + '</div>' + player + ordinary + '</body></html>';
+    for (const host of ['hub.pixibb.com', 'sexy.pixibb.com', 'cosplay.pixibb.com']) {
+        const result = rewrite('https://' + host + '/', body);
+        assert.ok(result.includes('<div id="frame"></div>' + player + ordinary));
+        assert.ok(!result.includes(ad));
+        assert.equal(rewrite('https://' + host + '/', body, { pixibb: false }), body);
+    }
+    assert.ok(rewrite('https://jable.tv/', body).includes(ad));
+    assert.deepEqual(stage('https://ad.a-ads.com/2426655/?size=320x50', null), {});
 });
 
 test('all 32 switch combinations independently control page rewriting and request blocking', () => {
