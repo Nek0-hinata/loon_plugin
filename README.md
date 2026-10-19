@@ -16,20 +16,20 @@ https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Web_NoAds
 
 ### 功能与开关
 
-在“网页去广告合集”设置中，可分别控制 4KHD、Jable、XVideos、Pornhub 和 PixiBB，默认全部开启。PixiBB 覆盖 `hub.pixibb.com`、`sexy.pixibb.com` 与 `cosplay.pixibb.com`。
+在“网页去广告合集”设置中，可按站点分别开启或关闭功能，默认全部开启。各开关的覆盖范围以插件内说明为准。
 
-- 4KHD 保留搜索功能并修正已识别的图片地址，同时阻止广告脚本。
-- PixiBB 移除已识别的推广脚本、赞助横幅和广告 iframe，保护正常播放器资源。
+- 保留正常搜索功能，修正已识别的图片地址，同时阻止广告脚本。
+- 移除已识别的推广脚本、赞助横幅和广告 iframe，保护正常播放器资源。
 - 每站开关同时控制本插件对本站的请求拦截和正文处理。其他插件、主配置和独立油猴脚本需分别管理。
 - 本插件没有无条件的全局广告域名拒绝，不保证拦截所有动态广告。关闭开关后需重新加载页面；MITM 主机名仍由插件统一声明。
 
-当前插件不处理 MissAV 或 18Comic。遇到无法安全解析的 HTML 时，保留原响应。
+插件仅处理其列明的站点。遇到无法安全解析的 HTML 时，保留原响应。
 
 ## 其他文件
 
 - `config/Loon_Enhanced.example.lcf`：配置示例。复制为本地文件后填写自己的订阅，并在 Loon 内生成证书；不要将填写后的文件上传到仓库。
 - `plugins/JD_Price_HTMLSafe.lpx` 与 `scripts/JD_Price.js`：京东比价 HTML 修正版。保留上游署名、价格请求及显示功能，修正外部字段转义和正文插入。此插件目前仍引用本地 `JD_Price.js`，需同时导入这两个文件，并停用旧版京东比价插件。
-- `userscripts/PixiBB_NoRedirect.user.js`：可选的独立油猴脚本，覆盖 hub 与 sexy 子站；其设置独立于 Loon 插件。
+- `userscripts/`：可选的独立浏览器脚本，其设置独立于 Loon 插件。
 - [安全与维护说明](docs/SECURITY.md)：配置、DNS、证书与资源过滤边界。
 - [图片与资源测试报告](docs/WEB_RESOURCE_TEST_2026-10-19.md)：公开静态页面核对结果及验证限制。
 
