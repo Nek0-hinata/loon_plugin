@@ -57,13 +57,15 @@ function run4khd({ registrations = [], controller = null, cacheStore } = {}) {
     return { context, listeners, opened, events };
 }
 
-test('every script uses a declared site switch and a bundled local script', () => {
+test('every script uses a declared site switch and the public main-branch script', () => {
     assert.equal(Object.keys(defaults).length, 5);
     assert.doesNotMatch(plugin, /\[Rule\]|\[Rewrite\]/);
     for (const rule of rules) {
         assert.ok(Object.hasOwn(defaults, rule.option));
         assert.ok(rule.line.includes('argument=[{' + rule.option + '}]'));
-        assert.ok(rule.line.includes('script-path=Web_NoAds.js'));
+        const source = rule.line.match(/script-path=([^,\s]+)/)[1];
+        assert.equal(source, 'https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js');
+        assert.equal(new URL(source).search, '');
     }
 });
 
