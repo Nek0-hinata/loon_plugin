@@ -4,7 +4,7 @@
 #!system=iOS,iPadOS,macOS
 #!loon_version=3.5.0
 #!tag=去广告,网页净化,防跳转
-#!date=2026-09-13
+#!date=2026-10-19
 
 [Argument]
 fourkhd = switch,true,tag=4KHD,desc=开启去广告与防推广跳转

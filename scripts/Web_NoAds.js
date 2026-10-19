@@ -47,7 +47,7 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
 
     function domainsFor(site) {
         if (site === 'fourkhd') return ['pemsrv.com', 'magsrv.com', 'pfec.uuss.uk', 'online.ssuu.uk'];
-        return site === 'pixibb' ? ['happylength.com'] : SHARED_AD_DOMAINS;
+        return site === 'pixibb' ? ['happylength.com', 'ad.a-ads.com'] : SHARED_AD_DOMAINS;
     }
 
     function isPromotion(url) {
@@ -101,6 +101,30 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
         return tag.slice(0, start) + quote + change(attr.value) + quote + tag.slice(attr.end);
     }
 
+    function fourKImageURL(value) {
+        // The disabled worker used to translate these placeholder URLs before fetching images.
+        // Retain the existing WP image proxy, dimensions and query; do not restore its ad code.
+        const match = /^((?:https?:)?\/\/)i0\.wp\.com\/pic\.4khd\.com\/(-[^?#\s"'<>]+)((?:[?#][^\s"'<>]*)?)$/i.exec(value);
+        if (!match || !/\/AAAAA/.test(match[2]) || !/\.webp$/i.test(match[2])) return value;
+        const imagePath = match[2].replace(/l\/AAAAA/g, 'I/AAAAA').replace(/AsHYQ/g, 'AsYHQ');
+        return match[1] + 'i0.wp.com/yt4.googleusercontent.com/' + imagePath + match[3];
+    }
+
+    function fourKImageAttributes(tag, name) {
+        let names = name === 'img' ? ['src', 'data-src', 'data-original'] : name === 'a' ? ['href'] : [];
+        if (name === 'meta' && /^(?:og:image(?::url|:secure_url)?|twitter:image(?::src)?)$/i.test(
+            (attribute(tag, 'property') || attribute(tag, 'name') || {}).value || '')) names = ['content'];
+        for (const name of names) {
+            const attr = attribute(tag, name);
+            if (!attr || !attr.token) continue;
+            const corrected = fourKImageURL(attr.value);
+            if (corrected === attr.value) continue;
+            const replacement = attr.quote + corrected + attr.quote;
+            tag = tag.slice(0, attr.end - attr.token.length) + replacement + tag.slice(attr.end);
+        }
+        return tag;
+    }
+
     function isPixibbAdScript(script) {
         // These markers occur together in the isolated promotion listener on all three audited hosts.
         return script.includes('pixibb_ad_cooldown') && /\bconst\s+adUrls\s*=/.test(script) &&
@@ -148,6 +172,7 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
                 continue;
             }
             if ((name === 'img' || name === 'embed') && blockedResource(resource, site)) continue;
+            if (site === 'fourkhd') tag = fourKImageAttributes(tag, name);
             if (site === 'pornhub' && /(^|\s)js-popUnder(?=\s|$)/.test((attribute(tag, 'class') || {}).value || '')) {
                 tag = classValue(tag, value => value.replace(/(^|\s)js-popUnder(?=\s|$)/g, '$1js-noPopUnder'));
             }
