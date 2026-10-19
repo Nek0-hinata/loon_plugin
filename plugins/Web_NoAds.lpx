@@ -1,10 +1,10 @@
 #!name=网页去广告合集
-#!desc=在插件设置中分别开关五个站点。PixiBB 支持 hub、sexy、cosplay 的推广脚本、赞助横幅和跳转拦截。需同时保存本地脚本 Web_NoAds.js；修改开关后重新加载网页。
+#!desc=五站独立开关；包含4KHD图片修复及PixiBB推广拦截。脚本通过远程HTTPS地址获取，无需另行导入本地JS。更新或修改开关后重新加载网页。
 #!author=Codex
 #!system=iOS,iPadOS,macOS
 #!loon_version=3.5.0
 #!tag=去广告,网页净化,防跳转
-#!date=2026-10-19
+#!date=2026-10-20
 
 [Argument]
 fourkhd = switch,true,tag=4KHD,desc=开启去广告与防推广跳转
@@ -15,14 +15,14 @@ pixibb = switch,true,tag=PixiBB,desc=开启去广告与防推广跳转
 
 [Script]
 # 关闭站点时同时停止该站点的请求拦截与正文处理。无全局域名 REJECT。
-http-request ^https?:\/\/(?:www\.)?4khd\.com/(?:interstitial\.js|js/a1000d\.js)(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], tag=4KHD广告请求
-http-response ^https?:\/\/(?:www\.)?4khd\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], requires-body=true, tag=4KHD网页净化
-http-response ^https?:\/\/(?:www\.)?jable\.tv/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={jable}, argument=[{jable}], requires-body=true, tag=Jable网页净化
-http-response ^https?:\/\/(?:www\.)?xvideos\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={xvideos}, argument=[{xvideos}], requires-body=true, tag=XVideos网页净化
-http-request ^https?:\/\/(?:www\.)?pornhub\.com/_xa/ads(?:_batch)?(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], tag=Pornhub广告请求
-http-response ^https?:\/\/(?:www\.)?pornhub\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], requires-body=true, tag=Pornhub网页净化
-http-request ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/promotion/(?:sexy-cosplay|sexy-girls)/?(?:\?.*)?$ script-path=Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], tag=PixiBB广告请求
-http-response ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], requires-body=true, tag=PixiBB网页净化
+http-request ^https?:\/\/(?:www\.)?4khd\.com/(?:interstitial\.js|js/a1000d\.js)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], tag=4KHD广告请求
+http-response ^https?:\/\/(?:www\.)?4khd\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={fourkhd}, argument=[{fourkhd}], requires-body=true, tag=4KHD网页净化
+http-response ^https?:\/\/(?:www\.)?jable\.tv/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={jable}, argument=[{jable}], requires-body=true, tag=Jable网页净化
+http-response ^https?:\/\/(?:www\.)?xvideos\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={xvideos}, argument=[{xvideos}], requires-body=true, tag=XVideos网页净化
+http-request ^https?:\/\/(?:www\.)?pornhub\.com/_xa/ads(?:_batch)?(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], tag=Pornhub广告请求
+http-response ^https?:\/\/(?:www\.)?pornhub\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={pornhub}, argument=[{pornhub}], requires-body=true, tag=Pornhub网页净化
+http-request ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/promotion/(?:sexy-cosplay|sexy-girls)/?(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], tag=PixiBB广告请求
+http-response ^https?:\/\/(?:hub|sexy|cosplay)\.pixibb\.com/(?!(?:wp-json|wp-admin)/)(?![^?#]*\.(?:js|css|jpe?g|png|webp|avif|gif|svg|ico|woff2?|ttf|mp4|m3u8|ts|m4s)(?:[?#]|$)).* script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Web_NoAds.js, timeout=10, enable={pixibb}, argument=[{pixibb}], requires-body=true, tag=PixiBB网页净化
 
 [Mitm]
 hostname = 4khd.com,www.4khd.com,jable.tv,www.jable.tv,xvideos.com,www.xvideos.com,pornhub.com,www.pornhub.com,hub.pixibb.com,sexy.pixibb.com,cosplay.pixibb.com
