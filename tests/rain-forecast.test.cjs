@@ -88,6 +88,20 @@ test('forecast excludes past endpoints, preserves the preceding-hour interval, a
   assert.equal(C.stats(parsed.rows).total, 2);
 });
 
+test('requested horizon preserves 48 future intervals when a response crosses the hour', () => {
+  const requested = Number(html.match(/forecast_hours:\s*(\d+)/)[1]);
+  const data = fixture();
+  for (const key of Object.keys(data.hourly)) data.hourly[key] = data.hourly[key].slice(0, requested);
+  const boundary = Date.UTC(2026, 9, 20, 5);
+  for (const receivedAt of [boundary - 1000, boundary, boundary + 1000]) {
+    const parsed = C.forecast(data, receivedAt);
+    assert.equal(parsed.rows.length, 48);
+    assert.ok(parsed.rows.every(row => row.end > receivedAt));
+    assert.equal(parsed.rows[0].end, receivedAt < boundary ? boundary : boundary + hour);
+    assert.equal(parsed.rows.at(-1).end - parsed.rows[0].start, 48 * hour);
+  }
+});
+
 test('null, absent, nonnumeric or invalid values never become no rain', () => {
   const data = fixture();
   data.hourly.precipitation = [99, null, -1, '0', Number.NaN];
@@ -131,3 +145,4 @@ test('plugin rules point to owned resources and keep diagnostics separately opti
   const diagnostic = fs.readFileSync(path.join(__dirname, '../plugins/Caiyun_Radar_Diagnostics.lpx'), 'utf8');
   assert.doesNotMatch(diagnostic, /vip_info|user_detail|v2\\\/user/);
 });
+
