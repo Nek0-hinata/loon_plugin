@@ -1,8 +1,8 @@
-/* Rain Forecast v1.0.0 — own-page rendering and optional read-only diagnostics. */
+/* Rain Forecast v1.0.1 — own-page rendering and optional read-only diagnostics. */
 (function () {
   "use strict";
   var PAGE = /^https:\/\/raw\.githubusercontent\.com\/Nek0-hinata\/loon_plugin\/main\/web\/Rain_Forecast\.html(?:\?.*)?$/;
-  var NATIVE = /^https:\/\/(?:api|wrapper)\.(?:cyapi\.cn|caiyunapp\.com)\/v\d+\/(radar|nafp|satellite)(?:[/?]|$)/;
+  var NATIVE = /^https:\/\/((?:api|wrapper)\.(?:cyapi\.cn|caiyunapp\.com))\/v\d+(?:\.\d+)*\/(radar|nafp|satellite)(?:([/?])|$)/;
   var CONFIG = /<script id="rain-config" type="application\/json">[\s\S]*?<\/script>/;
 
   function coordinate(value, limit, fallback) {
@@ -29,18 +29,55 @@
 
   // Field names are allowlisted: dynamic keys and all scalar values are omitted.
   var FIELDS = /^(status|result|data|radar|images|past|nowcast|forecast|frames|time|timestamp|path|url|bounds|station|timezone|tzshift|code|message|error|host|version|generated|precipitation|precipitation_2h|precipitation_probability|minutely|hourly)$/;
-  function shape(value, depth) {
+  function shape(value, depth, budget) {
+    budget = budget || { remaining: 300 };
+    if (budget.remaining-- <= 0) return "truncated";
     if (value === null) return "null";
-    if (Array.isArray(value)) return { type: "array", length: value.length, item: depth > 0 && value.length ? shape(value[0], depth - 1) : undefined };
+    if (Array.isArray(value)) {
+      var count = depth > 0 ? Math.min(value.length, 4) : 0;
+      return { type: "array", length: value.length,
+        items: value.slice(0, count).map(function (item) { return shape(item, depth - 1, budget); }),
+        omitted: value.length - count };
+    }
     if (typeof value !== "object") return typeof value;
     if (depth <= 0) return "object";
     var fields = {};
-    var omitted = 0;
-    Object.keys(value).slice(0, 60).forEach(function (key) {
-      if (FIELDS.test(key)) fields[key] = shape(value[key], depth - 1);
-      else omitted++;
+    var keys = Object.keys(value), reported = 0;
+    keys.forEach(function (key) {
+      if (FIELDS.test(key) && reported < 60) {
+        fields[key] = shape(value[key], depth - 1, budget);
+        reported++;
+      }
     });
-    return { type: "object", fields: fields, omitted: omitted };
+    return { type: "object", fields: fields, omitted: keys.length - reported };
+  }
+
+  function nativeStatus(response) {
+    var value = response.status === undefined ? response.statusCode : response.status;
+    var match = /^(?:HTTP\/\d(?:\.\d)?\s+)?(\d{3})(?:\s|$)/.exec(String(value));
+    var status = match ? Number(match[1]) : 0;
+    return status >= 100 && status <= 599 ? status : 0;
+  }
+
+  function nativeContentType(headers) {
+    var key = Object.keys(headers || {}).find(function (name) { return /^content-type$/i.test(name); });
+    if (!key) return "unavailable";
+    var mime = String(headers[key]).split(";")[0].trim().toLowerCase();
+    // Emit only fixed labels; an arbitrary MIME subtype can itself contain a token.
+    if (/^(application\/json|text\/json|application\/octet-stream|image\/png|image\/jpeg|image\/webp|text\/html|text\/plain)$/.test(mime)) return mime;
+    if (/^application\/[a-z0-9.+-]+\+json$/.test(mime)) return "application/*+json";
+    return "other";
+  }
+
+  function nativeRoute(url, match) {
+    var route = "/v:version/" + match[2];
+    if (match[3] !== "/") return route;
+    var suffix = url.slice(match[0].length).split(/[?#]/)[0];
+    var endpoint = suffix.split("/")[0];
+    // Never print an arbitrary path segment: tokens can appear in URL paths.
+    if (!endpoint) return route + "/";
+    return route + "/" + (/^(origin_images|forecast_images|images)$/.test(endpoint) ? endpoint : ":path")
+      + (suffix.indexOf("/") >= 0 ? "/:path" : "");
   }
 
   function render(request, response, argument, log) {
@@ -48,7 +85,9 @@
     if (!response) return {};
     var match = NATIVE.exec(url);
     if (match) {
-      var record = { category: match[1], status: Number(response.status) || 0 };
+      var record = { host: match[1], category: match[2], route: nativeRoute(url, match),
+        status: nativeStatus(response), contentType: nativeContentType(response.headers),
+        bodyCharacters: typeof response.body === "string" ? response.body.length : null };
       try {
         record.schema = typeof response.body === "string" && response.body.length <= 1048576
           ? shape(JSON.parse(response.body), 5) : "body unavailable or too large";
