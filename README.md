@@ -1,6 +1,6 @@
 # Loon 配置与插件
 
-本仓库提供 Loon 配置示例、网页去广告与防推广跳转插件，以及保留京东比价功能的 HTML 修正版。配置示例不包含个人订阅凭据或证书私钥。
+本仓库提供 Loon 配置示例、网页去广告与防推广跳转插件、降雨预报助手，以及保留京东比价功能的 HTML 修正版。配置示例不包含个人订阅凭据或证书私钥。
 
 ## 网页插件订阅
 
@@ -25,6 +25,16 @@ https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Web_NoAds
 
 插件仅处理其列明的站点。遇到无法安全解析的 HTML 时，保留原响应。
 
+## 降雨预报助手
+
+独立降水地图与未来 48 个逐小时时段预报，可与彩云天气普通版及现有去广告插件共用。使用 Windy 地图与 Open-Meteo 数据，无需会员令牌；当前尚未替换彩云 App 原生地图。
+
+```text
+https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Rain_Forecast.lpx
+```
+
+添加后启用插件和 MITM，在插件详情打开页面。支持城市搜索、手动坐标和点击后定位，默认北京。地图采用天气模式预报，与分钟级雷达外推不同。安装、数据含义和可选的彩云接口诊断见[降雨预报说明](docs/RAIN_FORECAST.md)。
+
 ## 其他文件
 
 - `config/Loon_Enhanced.example.lcf`：配置示例。复制为本地文件后填写自己的订阅，并在 Loon 内生成证书；不要将填写后的文件上传到仓库。
@@ -36,9 +46,9 @@ https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Web_NoAds
 ## 验证与维护
 
 ```text
-node --test tests/web-noads.test.cjs tests/jd-price-html.test.cjs
+node --test tests/*.test.cjs
 ```
 
-本地检查覆盖站点开关、图片修正、搜索及播放器资源保护、京东比价 HTML 拼接，不代表手机端显示或真实播放验证。
+本地检查覆盖站点开关、图片修正、搜索及播放器资源保护、京东比价 HTML 拼接，以及降水预报的响应处理与数据语义，不代表手机端显示或真实播放验证。
 
 变更通过分支和 PR 维护。不要提交机场订阅凭据、节点密码、Token、Cookie、证书或私钥。`*.local.lcf`、证书、`secrets/` 和本地测试下载目录已由 `.gitignore` 排除。
