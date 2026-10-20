@@ -1,0 +1,208 @@
+<!doctype html>
+<!-- loon-rain-forecast:v1 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>降雨预报助手</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f7fa;--card:#fff;--text:#172d3a;--muted:#617582;--line:#dbe5eb;--accent:#087f74;--soft:#e5f4f0;--bar:#239a95;--error:#aa3d22;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}main{max-width:1020px;margin:auto;padding:24px 16px max(32px,env(safe-area-inset-bottom))}header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}h1{font-size:25px;margin:0;letter-spacing:-.5px}h2{font-size:18px;margin:0}p{margin:6px 0}a{color:var(--accent)}.eyebrow{color:var(--accent);font-size:12px;letter-spacing:1px}.muted,small{color:var(--muted)}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;margin:14px 0;padding:18px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.between{justify-content:space-between}.grow{flex:1;min-width:140px}button,input{font:inherit;border-radius:10px;border:1px solid var(--line);min-height:44px}button{background:var(--soft);color:var(--accent);padding:8px 14px;cursor:pointer;font-weight:600}button:disabled{opacity:.55;cursor:wait}button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}input{padding:8px 12px;background:var(--card);color:var(--text);width:100%}button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--bar);outline-offset:3px}.search{margin:12px 0}.results{display:grid;gap:6px;margin:8px 0}.results button{text-align:left;font-weight:400}.coords{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.coords label{flex:1;min-width:110px}.status{min-height:24px;font-size:13px}.error{color:var(--error)}details{margin-top:12px}summary{cursor:pointer;color:var(--muted);padding:6px 0}.pill{display:inline-block;background:var(--soft);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:12px}.map-card{padding:0;overflow:hidden}.map-title{padding:16px 18px 10px}iframe{display:block;width:100%;height:480px;border:0;background:var(--bg)}.map-help{padding:10px 18px 14px;font-size:13px;color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}.stat{background:var(--bg);border-radius:12px;padding:12px}.value{font-size:25px;font-weight:650;display:block}.value small{font-size:12px;font-weight:400}.chart-scroll{overflow-x:auto}.chart{min-width:660px;width:100%;height:auto;display:block}.table-scroll{max-height:340px;overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{position:sticky;top:0;background:var(--card)}.footnote{font-size:12px;margin-top:16px;color:var(--muted)}.hidden{display:none!important}.loading{padding:28px 0;color:var(--muted)}.legend{display:flex;gap:16px;font-size:12px;flex-wrap:wrap;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;background:var(--bar);border-radius:50%;margin-right:5px}.empty{padding:14px;background:var(--soft);border-radius:10px}.source-links{font-size:12px;display:flex;gap:12px;flex-wrap:wrap}footer{padding:8px 4px;font-size:12px;color:var(--muted)}
+.pill{white-space:nowrap;flex-shrink:0}.status:empty{display:none}
+@media(max-width:560px){main{padding:16px 12px 28px}.card{padding:14px}.map-card{padding:0}h1{font-size:22px}iframe{height:440px}.stats{gap:7px}.stat{padding:10px}.value{font-size:clamp(16px,4.5vw,24px);white-space:nowrap;letter-spacing:-.3px}header{align-items:flex-start}.header-note{text-align:right;font-size:12px}}
+@media(prefers-color-scheme:dark){:root{--bg:#101e26;--card:#192b35;--text:#e2edf3;--muted:#a0b6c2;--line:#304752;--accent:#79d7c5;--soft:#203d3c;--bar:#55bfb6;--error:#ffaf92}button[aria-pressed=true]{color:#102c27}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="eyebrow">RAIN FORECAST</div><h1>降雨预报助手</h1><p class="muted" id="location-label">北京</p></div><span class="pill header-note">模式降水预报</span></header>
+<section class="card" aria-label="选择地点">
+  <form id="search-form" class="row search"><label class="grow"><span class="hidden">搜索城市</span><input id="city" type="search" placeholder="搜索城市，例如 北京、杭州" aria-label="搜索城市" maxlength="100" required></label><button type="submit" id="search-button">搜索</button><button type="button" id="locate">我的位置</button></form>
+  <div id="search-status" class="status" role="status" aria-live="polite"></div><div id="search-results" class="results"></div>
+  <details><summary>手动输入经纬度</summary><form id="coordinate-form" class="coords"><label>纬度（WGS84）<input id="latitude" type="number" min="-90" max="90" step="any" required></label><label>经度（WGS84）<input id="longitude" type="number" min="-180" max="180" step="any" required></label><button type="submit">使用坐标</button></form></details>
+</section>
+<section class="card map-card" aria-labelledby="map-heading">
+  <div class="map-title row between"><h2 id="map-heading">降水地图</h2><a id="full-map" target="_blank" rel="noopener noreferrer">全屏地图 ↗</a></div>
+  <iframe id="rain-map" title="Windy未来降水地图，可在图内拖动时间轴" referrerpolicy="no-referrer" allowfullscreen></iframe>
+  <p class="map-help">在地图底部拖动时间轴或点击播放，查看未来雨带变化。地图来自 Windy / <span id="model-label">ECMWF</span>；这是模式预报，与分钟级雷达外推不同。加载失败时可打开全屏地图。</p>
+</section>
+<section class="card" aria-labelledby="hourly-heading">
+  <div class="row between"><h2 id="hourly-heading">逐小时降水</h2><div class="row"><button id="range24" type="button" aria-pressed="false">24 时段</button><button id="range48" type="button" aria-pressed="true">48 时段</button><button id="refresh" type="button" aria-label="刷新预报">刷新</button></div></div>
+  <div id="forecast-status" class="status" role="status" aria-live="polite"></div>
+  <div id="loading" class="loading">正在获取预报…</div>
+  <div id="forecast-content" class="hidden">
+    <div class="stats"><div class="stat"><span class="muted">前 6 时段降水</span><span class="value" id="total6">—</span></div><div class="stat"><span class="muted" id="total-label">48 时段累计</span><span class="value" id="total48">—</span></div><div class="stat"><span class="muted">最高降水概率</span><span class="value" id="probability">—</span></div></div>
+    <p id="coverage" class="muted"></p><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 960 220" role="img" aria-label="各时段累计降水量，单位毫米"></svg></div>
+    <p id="rain-summary" class="empty"></p><div class="legend"><span><i class="dot"></i>时段降水量（mm）</span><span>空缺值显示为 —，不按零降水计算</span></div>
+    <details><summary>查看逐小时时段与数值</summary><div class="table-scroll"><table><thead><tr><th scope="col">时段（当地时间）</th><th scope="col">降水量</th><th scope="col">概率</th></tr></thead><tbody id="hourly-table"></tbody></table></div></details>
+    <p id="fetched-at" class="footnote"></p>
+  </div>
+  <p class="footnote">数值来自 Open-Meteo 自动选用的天气模式，与 Windy 地图的模式可能不同。每个时间点的降水量为此前一小时累计值；首个时段可能包含当前时刻之前的部分。适合查看小时级趋势，不能替代彩云的分钟级短临预报。</p>
+</section>
+<footer><div class="source-links"><a href="https://www.windy.com/" target="_blank" rel="noopener noreferrer">地图：Windy</a><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">数值与城市搜索：Open-Meteo · CC BY 4.0</a><a href="https://github.com/Nek0-hinata/loon_plugin/blob/main/docs/RAIN_FORECAST.md" target="_blank" rel="noopener noreferrer">使用说明</a></div><p>地点只保存在此浏览器；查询时将坐标发送给天气数据提供方。仅在点击“我的位置”后请求定位。</p></footer>
+</main>
+<script id="rain-config" type="application/json">{"latitude":39.9042,"longitude":116.4074,"name":"北京","model":"ecmwf"}</script>
+<script id="rain-core">
+(function () {
+  'use strict';
+  function validCoordinate(value, limit) {
+    return value !== null && value !== undefined && String(value).trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= limit;
+  }
+  function location(value) {
+    if (!value || !validCoordinate(value.latitude, 90) || !validCoordinate(value.longitude, 180)) throw new Error('经纬度无效');
+    return { latitude: Number(value.latitude), longitude: Number(value.longitude), name: typeof value.name === 'string' ? value.name.slice(0, 100) : '选定地点' };
+  }
+  function numeric(value, min, max) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max ? value : null;
+  }
+  function forecast(data, now) {
+    if (!data || !data.hourly || !Array.isArray(data.hourly.time) || !Array.isArray(data.hourly.precipitation)) throw new Error('预报响应缺少逐小时数据');
+    if (!data.hourly_units || data.hourly_units.time !== 'unixtime' || data.hourly_units.precipitation !== 'mm') throw new Error('预报单位不受支持');
+    var hourly = data.hourly, rows = [], previous = -Infinity;
+    hourly.time.forEach(function (stamp, i) {
+      if (typeof stamp !== 'number' || !Number.isFinite(stamp) || stamp <= previous || (i > 0 && stamp - previous !== 3600)) throw new Error('预报时间顺序或小时间隔无效');
+      previous = stamp;
+      if (stamp > now / 1000 && rows.length < 48) rows.push({ end: stamp * 1000, start: (stamp - 3600) * 1000,
+        mm: numeric(hourly.precipitation[i], 0, 10000),
+        probability: data.hourly_units.precipitation_probability === '%' ? numeric((hourly.precipitation_probability || [])[i], 0, 100) : null });
+    });
+    if (!rows.length) throw new Error('数据没有未来时段，请稍后刷新');
+    return { rows: rows, timezone: typeof data.timezone === 'string' ? data.timezone : 'UTC' };
+  }
+  function stats(rows) {
+    var known = rows.filter(function (r) { return r.mm !== null; });
+    var probs = rows.map(function (r) { return r.probability; }).filter(function (p) { return p !== null; });
+    return { total: known.length ? known.reduce(function (n, r) { return n + r.mm; }, 0) : null, complete: known.length === rows.length,
+      known: known.length, probability: probs.length ? Math.max.apply(null, probs) : null };
+  }
+  function mapURL(place, model) {
+    var p = location(place), m = ['ecmwf', 'gfs', 'icon'].includes(model) ? model : 'ecmwf';
+    var u = new URL('https://embed.windy.com/embed.html');
+    Object.entries({ type: 'map', location: 'coordinates', lat: p.latitude, lon: p.longitude, detailLat: p.latitude, detailLon: p.longitude,
+      zoom: 6, overlay: 'rain', product: m, level: 'surface', metricRain: 'mm', metricTemp: '°C', metricWind: 'm/s', marker: 'true', message: 'true' }).forEach(function (entry) { u.searchParams.set(entry[0], entry[1]); });
+    return u.href;
+  }
+  globalThis.RainForecastCore = Object.freeze({ location: location, forecast: forecast, stats: stats, mapURL: mapURL });
+}());
+</script>
+<script id="rain-ui">
+(function () {
+  'use strict';
+  var C = RainForecastCore, $ = function (id) { return document.getElementById(id); };
+  var settings = JSON.parse($('rain-config').textContent), place = C.location(settings), range = 48, data = null, fetchedAt = null, sequence = 0, searchSequence = 0, activeController = null;
+  var storageKey = 'loon-rain-location-v1';
+  try { var saved = JSON.parse(localStorage.getItem(storageKey)); if (saved) place = C.location(saved); } catch (_) {}
+  function status(id, message, error) { $(id).textContent = message; $(id).classList.toggle('error', !!error); }
+  function format(time, options) {
+    var settings = Object.assign({ timeZone: data ? data.timezone : 'UTC', hour12: false }, options);
+    try { return new Intl.DateTimeFormat('zh-CN', settings).format(new Date(time)); }
+    catch (_) { settings.timeZone = 'UTC'; return new Intl.DateTimeFormat('zh-CN', settings).format(new Date(time)) + ' UTC'; }
+  }
+  function timeLabel(time) { return format(time, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  function interval(row) { return timeLabel(row.start) + ' – ' + format(row.end, { hour: '2-digit', minute: '2-digit' }); }
+  function amount(stat) { return stat.total === null ? '—' : (stat.complete ? '' : '≥ ') + stat.total.toFixed(1) + ' mm'; }
+  function svgNode(tag, attrs, text) {
+    var node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function render() {
+    if (!data) return;
+    var rows = data.rows.slice(0, range), all = C.stats(rows), first6 = C.stats(rows.slice(0, 6));
+    $('forecast-content').classList.remove('hidden');
+    $('total6').textContent = amount(first6); $('total48').textContent = amount(all);
+    $('total-label').textContent = rows.length + ' 时段累计'; $('probability').textContent = all.probability === null ? '—' : Math.round(all.probability) + '%';
+    $('coverage').textContent = timeLabel(rows[0].start) + ' 至 ' + timeLabel(rows[rows.length - 1].end) + ' · ' + data.timezone + ' · ' + rows.length + '/' + range + ' 时段，' + all.known + ' 个时段有降水量数据';
+    var svg = $('chart'); svg.replaceChildren();
+    svg.appendChild(svgNode('title', {}, '逐小时时段累计降水量（毫米）'));
+    var max = Math.max(1, ...rows.map(function (r) { return r.mm === null ? 0 : r.mm; })), step = 880 / rows.length;
+    for (var i = 0; i <= 4; i++) {
+      var y = 170 - i * 36;
+      svg.appendChild(svgNode('line', { x1: 48, x2: 936, y1: y, y2: y, stroke: 'var(--line)' }));
+      svg.appendChild(svgNode('text', { x: 40, y: y + 4, 'text-anchor': 'end', fill: 'var(--muted)', 'font-size': 11 }, (max * i / 4).toFixed(1)));
+    }
+    $('hourly-table').replaceChildren();
+    rows.forEach(function (row, i) {
+      var height = row.mm === null ? 0 : row.mm / max * 144;
+      var bar = svgNode('rect', { x: 52 + i * step, y: row.mm === null ? 166 : 170 - Math.max(height, row.mm > 0 ? 1 : 0), width: Math.max(2, step - 4), height: row.mm === null ? 4 : height, rx: 2, fill: row.mm === null ? 'var(--muted)' : 'var(--bar)' });
+      bar.appendChild(svgNode('title', {}, interval(row) + '：' + (row.mm === null ? '无数据' : row.mm.toFixed(1) + ' mm'))); svg.appendChild(bar);
+      if (i % (range === 48 ? 6 : 3) === 0) svg.appendChild(svgNode('text', { x: 52 + i * step, y: 197, fill: 'var(--muted)', 'font-size': 11 }, format(row.end, { day: 'numeric', hour: '2-digit' })));
+      var tr = document.createElement('tr');
+      [interval(row), row.mm === null ? '—' : row.mm.toFixed(1) + ' mm', row.probability === null ? '—' : Math.round(row.probability) + '%'].forEach(function (v) { var td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+      $('hourly-table').appendChild(tr);
+    });
+    var nextRain = rows.find(function (r) { return r.mm !== null && r.mm > 0; });
+    $('rain-summary').textContent = nextRain ? '首个有降水的预报时段：' + interval(nextRain) + '，' + nextRain.mm.toFixed(1) + ' mm。'
+      : all.complete ? '这些时段的模式预报降水量均为 0 mm。' : '已返回的数值中未见降水，缺失时段无法判断。';
+    $('fetched-at').textContent = '获取时间：' + timeLabel(fetchedAt) + '（所选地点当地时间）；这不是模式起报时间。';
+    $('range24').setAttribute('aria-pressed', String(range === 24)); $('range48').setAttribute('aria-pressed', String(range === 48));
+  }
+  async function json(url, signal) {
+    var response = await fetch(url, { signal: signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!response.ok) throw new Error(response.status === 429 ? '数据源请求过多，请稍后再试' : '数据源返回 HTTP ' + response.status);
+    return response.json();
+  }
+  async function loadForecast() {
+    var ticket = ++sequence;
+    if (activeController) activeController.abort();
+    activeController = new AbortController(); var controller = activeController;
+    var timeout = setTimeout(function () { controller.abort(); }, 15000);
+    $('refresh').disabled = true; $('loading').classList.toggle('hidden', !!data); status('forecast-status', '正在更新…');
+    var url = new URL('https://api.open-meteo.com/v1/forecast');
+    Object.entries({ latitude: place.latitude, longitude: place.longitude, hourly: 'precipitation,precipitation_probability', forecast_hours: 49, timezone: 'auto', timeformat: 'unixtime', precipitation_unit: 'mm' }).forEach(function (e) { url.searchParams.set(e[0], e[1]); });
+    try {
+      var result = await json(url.href, controller.signal);
+      if (ticket !== sequence) return;
+      data = C.forecast(result, Date.now()); fetchedAt = Date.now(); render(); status('forecast-status', '');
+    } catch (error) {
+      if (ticket !== sequence) return;
+      status('forecast-status', (data ? '刷新失败，保留上次获取的数据。' : '预报暂不可用。') + (error.name === 'AbortError' ? '请求超时，请重试。' : error.message), true);
+    } finally {
+      clearTimeout(timeout);
+      if (ticket === sequence) { $('loading').classList.add('hidden'); $('refresh').disabled = false; }
+    }
+  }
+  function selectLocation(value, remember) {
+    place = C.location(value); data = null; fetchedAt = null;
+    $('forecast-content').classList.add('hidden'); $('search-results').replaceChildren();
+    $('location-label').textContent = place.name + ' · ' + place.latitude.toFixed(4) + ', ' + place.longitude.toFixed(4);
+    $('latitude').value = place.latitude; $('longitude').value = place.longitude;
+    $('rain-map').src = C.mapURL(place, settings.model); $('full-map').href = C.mapURL(place, settings.model);
+    $('model-label').textContent = ['ecmwf', 'gfs', 'icon'].includes(settings.model) ? settings.model.toUpperCase() : 'ECMWF';
+    if (remember) { try { localStorage.setItem(storageKey, JSON.stringify(place)); } catch (_) {} }
+    loadForecast();
+  }
+  $('search-form').addEventListener('submit', async function (event) {
+    event.preventDefault(); var name = $('city').value.trim(); if (name.length < 2) return status('search-status', '请输入至少两个字符的城市名。', true);
+    var ticket = ++searchSequence, controller = new AbortController(), timeout = setTimeout(function () { controller.abort(); }, 12000);
+    $('search-button').disabled = true; $('search-results').replaceChildren(); status('search-status', '正在搜索…');
+    try {
+      var u = new URL('https://geocoding-api.open-meteo.com/v1/search');
+      Object.entries({ name: name, count: 6, language: 'zh', format: 'json' }).forEach(function (e) { u.searchParams.set(e[0], e[1]); });
+      var result = await json(u.href, controller.signal); if (ticket !== searchSequence) return;
+      var choices = (result.results || []).map(function (r) { try { return C.location({ latitude: r.latitude, longitude: r.longitude, name: [r.name, r.admin1, r.country].filter(Boolean).join(' · ') }); } catch (_) { return null; } }).filter(Boolean);
+      status('search-status', choices.length ? '请选择地点：' : '没有找到城市，可尝试英文名或手动输入经纬度。');
+      choices.forEach(function (choice) { var button = document.createElement('button'); button.type = 'button'; button.textContent = choice.name; button.addEventListener('click', function () { status('search-status', ''); selectLocation(choice, true); }); $('search-results').appendChild(button); });
+    } catch (error) { if (ticket === searchSequence) status('search-status', error.name === 'AbortError' ? '搜索超时，可手动输入经纬度。' : '搜索失败：' + error.message, true); }
+    finally { clearTimeout(timeout); if (ticket === searchSequence) $('search-button').disabled = false; }
+  });
+  $('coordinate-form').addEventListener('submit', function (event) {
+    event.preventDefault(); try { selectLocation({ latitude: $('latitude').value, longitude: $('longitude').value, name: '选定坐标' }, true); status('search-status', ''); } catch (error) { status('search-status', error.message, true); }
+  });
+  $('locate').addEventListener('click', function () {
+    if (!navigator.geolocation) return status('search-status', '浏览器不支持定位，请搜索城市或输入坐标。', true);
+    $('locate').disabled = true; status('search-status', '正在获取位置…');
+    navigator.geolocation.getCurrentPosition(function (position) {
+      $('locate').disabled = false; status('search-status', ''); selectLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, name: '我的位置' }, true);
+    }, function () { $('locate').disabled = false; status('search-status', '未能获得定位权限或位置，可搜索城市或输入坐标。', true); }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  });
+  $('range24').addEventListener('click', function () { range = 24; render(); }); $('range48').addEventListener('click', function () { range = 48; render(); });
+  $('refresh').addEventListener('click', function () { loadForecast(); });
+  selectLocation(place, false);
+}());
+</script>
+</body>
+</html>

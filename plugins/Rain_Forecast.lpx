@@ -1,0 +1,21 @@
+#!name=降雨预报助手
+#!desc=点击插件链接打开独立降水地图与未来48个逐小时时段预报。Windy地图/Open-Meteo数据，无需会员令牌。可与彩云去广告插件共用；尚未替换彩云App原生地图。需启用MITM并信任证书。
+#!author=Nek0-hinata
+#!openUrl=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/web/Rain_Forecast.html
+#!homepage=https://github.com/Nek0-hinata/loon_plugin/blob/main/docs/RAIN_FORECAST.md
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.5.0
+#!tag=天气,降水预报
+#!date=2026-10-20
+
+[Argument]
+latitude = input,39.9042,type=number,tag=默认纬度,desc=WGS84纬度；默认北京。页面内可搜索城市或手动定位。
+longitude = input,116.4074,type=number,tag=默认经度,desc=WGS84经度；默认北京。
+location_name = input,"北京",tag=默认地点名称,desc=仅用于显示；更改坐标时可一并修改。
+model = select,ecmwf,gfs,icon,tag=地图预报模式,desc=仅影响Windy地图；逐小时数据由Open-Meteo自动选用模式。
+
+[Script]
+http-response ^https:\/\/raw\.githubusercontent\.com\/Nek0-hinata\/loon_plugin\/main\/web\/Rain_Forecast\.html(?:\?.*)?$ script-path=https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/scripts/Rain_Forecast.js, requires-body=true, argument=[{latitude},{longitude},{location_name},{model}], timeout=10, tag=降雨预报页面
+
+[MitM]
+hostname=raw.githubusercontent.com
