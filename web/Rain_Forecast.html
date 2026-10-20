@@ -152,7 +152,8 @@
     var timeout = setTimeout(function () { controller.abort(); }, 15000);
     $('refresh').disabled = true; $('loading').classList.toggle('hidden', !!data); status('forecast-status', '正在更新…');
     var url = new URL('https://api.open-meteo.com/v1/forecast');
-    Object.entries({ latitude: place.latitude, longitude: place.longitude, hourly: 'precipitation,precipitation_probability', forecast_hours: 49, timezone: 'auto', timeformat: 'unixtime', precipitation_unit: 'mm' }).forEach(function (e) { url.searchParams.set(e[0], e[1]); });
+    // Include the current endpoint and one extra hour for requests crossing an hour boundary.
+    Object.entries({ latitude: place.latitude, longitude: place.longitude, hourly: 'precipitation,precipitation_probability', forecast_hours: 50, timezone: 'auto', timeformat: 'unixtime', precipitation_unit: 'mm' }).forEach(function (e) { url.searchParams.set(e[0], e[1]); });
     try {
       var result = await json(url.href, controller.signal);
       if (ticket !== sequence) return;
@@ -206,3 +207,4 @@
 </script>
 </body>
 </html>
+
