@@ -5,7 +5,7 @@ const CSS = {
     "xvideos": "#hlsplayer>.videoad-base,#ad-header-mobile-contener,#ad-footer,.exo-ad-ins-div.exo-ad-playersiderectangle,.exo-ad-ins-container.ad-support-desktop,.thumb-ad.thumb-nat-ad.thumb-nat-exo-ad,a.ignore-popunder[href^=\"https://s.\"]{display:none!important}",
     "pornhub": "ins.adsbytrafficjunky,#popsByTrafficJunky,#pb_iframe,.sideAds,.home-ad-container,.browse-ad-container,.playlist-ad-container,.communityAds,.photo-ad-container,#advertisementBox,.ad_box,.js-nativeTjVideoGrid.js_promoItem{display:none!important}"
 };
-const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/URL(w.scriptURL,location.href);return(u.origin===location.origin&&u.pathname===\"/interstitial.js\")}catch(e){return(false)}};(async()=>{let/**/reload=false;const/**/sw=navigator.serviceWorker;if(sw){const/**/rs=await/**/sw.getRegistrations().catch(()=>[]);await/**/Promise.all(rs.map(async(r)=>{const/**/workers=[r.active,r.waiting,r.installing].filter(isAdWorker);if(!workers.length)return;try{if(await/**/r.unregister())reload=reload||(isAdWorker(sw.controller)&&workers.some(w=>w.scriptURL===sw.controller.scriptURL))}catch(e){}}))}if(window.caches)await/**/caches.keys().then(ks=>Promise.all(ks.filter(k=>k===\"my-cache\"||k===\"img-cache\").map(k=>caches.delete(k).catch(()=>false)))).catch(()=>{});if(reload)location.reload()})().catch(()=>{});EventTarget.prototype.addEventListener=function(t,l,o){if(t===\"click\"&&typeof(l)===\"function\"&&/(?:popMagic|exoJsPop|pemsrv|magsrv)/.test(Function.prototype.toString.call(l)))return;return(A.apply(this,arguments))};window.open=function(u){try{const/**/h=new/**/URL(String(u),location.href);if(/(?:^|[.])(?:pemsrv|magsrv)[.]com$|^(?:pfec[.]uuss|online[.]ssuu)[.]uk$/i.test(h.hostname))return(null)}catch(e){}return(O.apply(this,arguments))};document.addEventListener(\"DOMContentLoaded\",()=>document.querySelectorAll('ins[class^=\"eas\"],ins[class^=\"adsby\"],.centbtd,.ex-over-top,#popmagicldr').forEach(e=>e.remove()),{once:true})})(EventTarget.prototype.addEventListener,window.open);";
+const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/URL(w.scriptURL,location.href);return(u.origin===location.origin&&/^\\/(?:interstitial|worker|scss)[.]js$/.test(u.pathname))}catch(e){return(false)}};(async()=>{let/**/reload=false;const/**/sw=navigator.serviceWorker;if(sw){const/**/rs=await/**/sw.getRegistrations().catch(()=>[]);await/**/Promise.all(rs.map(async(r)=>{const/**/workers=[r.active,r.waiting,r.installing].filter(isAdWorker);if(!workers.length)return;try{if(await/**/r.unregister())reload=reload||(isAdWorker(sw.controller)&&workers.some(w=>w.scriptURL===sw.controller.scriptURL))}catch(e){}}))}if(window.caches)await/**/caches.keys().then(ks=>Promise.all(ks.filter(k=>k===\"my-cache\"||k===\"img-cache\").map(k=>caches.delete(k).catch(()=>false)))).catch(()=>{});if(reload)location.reload()})().catch(()=>{});EventTarget.prototype.addEventListener=function(t,l,o){if(t===\"click\"&&typeof(l)===\"function\"&&/(?:popMagic|exoJsPop|pemsrv|magsrv)/.test(Function.prototype.toString.call(l)))return;return(A.apply(this,arguments))};window.open=function(u){try{const/**/h=new/**/URL(String(u),location.href);if(/(?:^|[.])(?:pemsrv|magsrv)[.]com$|^(?:pfec[.]uuss|online[.]ssuu)[.]uk$/i.test(h.hostname))return(null)}catch(e){}return(O.apply(this,arguments))};document.addEventListener(\"DOMContentLoaded\",()=>document.querySelectorAll('ins[class^=\"eas\"],ins[class^=\"adsby\"],.centbtd,.ex-over-top,#popmagicldr').forEach(e=>e.remove()),{once:true})})(EventTarget.prototype.addEventListener,window.open);";
 
     const SHARED_AD_DOMAINS = ['trafficjunky.net', 'adtng.com', 'dzhjmp.com', 'orbsrv.com',
         'ackcdn.net', 'aucdn.net', 'aacdn.net', 'rtbix.com', 'ad1n.net', 'rtbsuperhub.com',
@@ -64,7 +64,7 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
     }
 
     function blockedRequest(url, site) {
-        if (site === 'fourkhd') return /^\/(?:interstitial\.js|js\/a1000d\.js)$/.test(url.path);
+        if (site === 'fourkhd') return /^\/(?:(?:interstitial|worker|scss)\.js|js\/a1000d\.js)$/.test(url.path);
         if (site === 'pixibb') return isPromotion(url);
         return site === 'pornhub' && /^\/_xa\/ads(?:_batch)?$/.test(url.path);
     }
@@ -132,6 +132,11 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
             /\bwindow\.open\s*\(\s*targetUrl\s*,/.test(script);
     }
 
+    function isFourKBootstrap(script) {
+        // Exact current loader, allowing formatting changes. Do not remove unrelated inline scripts.
+        return /^\s*const\s+s\s*=\s*document\.createElement\(\s*(['"])script\1\s*\)\s*;\s*s\.src\s*=\s*location\.hostname\.endsWith\(\s*(['"])\.4khd\.com\2\s*\)\s*\?\s*(['"])\/worker\.js\3\s*:\s*(['"])\/scss\.js\4\s*;\s*s\.async\s*=\s*true\s*;\s*document\.head\.appendChild\(\s*s\s*\)\s*;?\s*$/.test(script);
+    }
+
     // A single pass over response text. Never scan live DOM mutations; skip comments and raw text.
     function cleanDocument(html, site, page) {
         let cursor = 0, output = '';
@@ -166,6 +171,8 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
                 if (!end) return null;
                 const inner = html.slice(cursor, end.index);
                 const remove = ((name === 'script' || name === 'iframe') && blockedResource(resource, site)) ||
+                    (name === 'script' && site === 'fourkhd' &&
+                        (src ? resource && resource.host === page.host && blockedRequest(resource, site) : isFourKBootstrap(inner))) ||
                     (name === 'script' && !src && site === 'pixibb' && isPixibbAdScript(inner));
                 if (!remove) output += html.slice(start, close.lastIndex);
                 cursor = close.lastIndex;

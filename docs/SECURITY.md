@@ -40,9 +40,11 @@
 - `pemsrv.com`、`magsrv.com`、`afcdn.net`
 - `pfec.uuss.uk`、`online.ssuu.uk`
 
-当前 `/interstitial.js` 同时作为旧 Service Worker 的脚本：页面处理失败时，它会返回包含 `location.href="https://pfec.uuss.uk"` 的 503 HTML。不要直接拒绝它运行期间依赖的 `/js/config.js`，否则会主动触发这条失败路径，并连带破坏 `/?s=关键词` 到 `/search/关键词` 的正常搜索流程。插件保留 `config.js` 仅用于让已安装的旧 Service Worker 完成最后一次页面处理；随后页面注入会注销旧注册、清理其缓存并在需要时自动刷新一次。新的 `/interstitial.js` 和广告渲染器 `/js/a1000d.js` 仍会被阻止。
+2026-08-16 版本的 `/interstitial.js` 同时作为旧 Service Worker 的脚本：页面处理失败时，它会返回包含 `location.href="https://pfec.uuss.uk"` 的 503 HTML。不要直接拒绝它运行期间依赖的 `/js/config.js`，否则会主动触发这条失败路径，并连带破坏 `/?s=关键词` 到 `/search/关键词` 的正常搜索流程。插件保留 `config.js` 仅用于让已安装的旧 Service Worker 完成最后一次页面处理；随后页面注入会注销旧注册、清理其缓存并在需要时自动刷新一次。新的 `/interstitial.js` 和广告渲染器 `/js/a1000d.js` 仍会被阻止。
 
 2026-10-19 复核发现，这个脚本还承担正常图片地址转换：公开 HTML 中的 `i0.wp.com/pic.4khd.com/-…/AAAAA…/*.webp` 需要转换为 `i0.wp.com/yt4.googleusercontent.com/-…/AAAAA…/*.webp`，并还原路径中的 `l/AAAAA` 与 `AsHYQ` 标记。过去只停用整个脚本会丢失这项必要功能。本插件现在仅在 4KHD 的图片属性、原图链接及图片预览元数据中执行已核实的转换，保留原始尺寸和查询参数；不会执行远端混淆脚本或恢复它的广告、统计、域名测速功能，也不添加图片域名的 MITM 或全局重定向规则。测试范围见 [图片与资源测试报告](WEB_RESOURCE_TEST_2026-10-19.md)。
+
+2026-11-16 复核发现，公开页面已改为内联加载 `/worker.js`，备用路径为 `/scss.js`，而 `/interstitial.js` 只剩注册 `/worker.js` 的入口。插件现在同时拦截这三个精确路径，注销同源、对应路径的已安装 Worker，并移除已核实的独立内联加载器及同源广告脚本标签，避免缓存脚本再次注册。仍保留 `config.js`、正常站点脚本、搜索表单和图片转换。更新时必须同时更新 LPX 与远程 JS；手机端验证及残留网站数据处理见[本次排障报告](WEB_4KHD_DIAGNOSIS_2026-11-16.md)。
 
 ## PixiBB 插件维护
 
