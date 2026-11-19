@@ -257,6 +257,83 @@ test('4KHD does not reload when a different worker controls the page', async () 
     assert.deepEqual(state.events, []);
 });
 
+test('4KHD blocks current and legacy ad entry points through the actual LPX rules', () => {
+    for (const host of ['4khd.com', 'www.4khd.com']) {
+        for (const path of ['/worker.js', '/scss.js', '/interstitial.js', '/js/a1000d.js']) {
+            for (const query of ['', '?v=2']) {
+                const url = 'https://' + host + path + query;
+                assert.equal(stage(url, null).response?.body, '', url);
+                assert.deepEqual(stage(url, null, { fourkhd: false }), {}, url);
+                assert.deepEqual(handle({ url }, null, { fourkhd: false }), {}, url);
+            }
+        }
+    }
+    for (const url of ['https://www.4khd.com/worker.js.backup', 'https://www.4khd.com/js/worker.js',
+        'https://www.4khd.com/js/config.js?v=2', 'https://www.4khd.com/offline.js',
+        'https://www.4khd.com/help?file=worker.js', 'https://example.org/worker.js',
+        'https://www.4khd.com.example.org/worker.js']) assert.deepEqual(stage(url, null), {}, url);
+});
+
+test('4KHD strips only the audited current loader and same-origin ad script tags', () => {
+    // Reduced from the public home, search and detail HTML inspected on 2026-11-16.
+    const loader = "\nconst s = document.createElement('script');\n" +
+        "s.src = location.hostname.endsWith('.4khd.com') ? '/worker.js' : '/scss.js';\n" +
+        's.async = true;\ndocument.head.appendChild(s);\n';
+    const ad = '<script>' + loader + '</script><script src="/worker.js?v=1"></script>' +
+        '<script src="https://www.4khd.com/scss.js"></script><script src="/interstitial.js"></script>';
+    const normal = '<script src="https://example.org/worker.js"></script><script src="/js/config.js"></script>' +
+        '<script src="/wp-content/site.js"></script><script>const path="/worker.js";</script>' +
+        '<script>' + loader + 'keepOtherBehavior();</script>' +
+        '<!-- <script src="/worker.js"></script> --><form action="/"><input name="s"></form>';
+    const page = '<html><head></head><body>' + ad + normal + '</body></html>';
+    assert.ok(rewrite('https://www.4khd.com/', page).endsWith('<body>' + normal + '</body></html>'));
+    assert.equal(rewrite('https://www.4khd.com/', page, { fourkhd: false }), page);
+    assert.ok(rewrite('https://jable.tv/', page).endsWith('<body>' + ad + normal + '</body></html>'));
+    // Missing closing scripts still cause the complete response to pass through unchanged.
+    const incomplete = '<html><head></head><body><script>' + loader;
+    assert.equal(rewrite('https://www.4khd.com/', incomplete), incomplete);
+});
+
+test('4KHD unregisters both current worker paths in all registration states before reloading', async () => {
+    for (const path of ['/worker.js?v=2', '/scss.js?v=3', '/interstitial.js?v=1']) {
+        for (const state of ['active', 'waiting', 'installing']) {
+            const ad = { scriptURL: 'https://www.4khd.com' + path };
+            const removed = [], deleted = [];
+            let finishUnregister;
+            const result = run4khd({ controller: ad, registrations: [
+                { [state]: ad, unregister() {
+                    removed.push(path); return new Promise(resolve => { finishUnregister = resolve; });
+                } }
+            ], cacheStore: {
+                keys: async () => ['my-cache', 'img-cache', 'user-cache'],
+                delete: async key => { deleted.push(key); return true; }
+            } });
+            await new Promise(setImmediate);
+            assert.deepEqual(removed, [path], state + path);
+            assert.deepEqual(deleted, []);
+            assert.deepEqual(result.events, []);
+            finishUnregister(true);
+            await new Promise(setImmediate);
+            assert.deepEqual(deleted.sort(), ['img-cache', 'my-cache']);
+            assert.deepEqual(result.events, ['reload']);
+        }
+    }
+});
+
+test('4KHD leaves unrelated and cross-origin workers registered and never reloads for them', async () => {
+    for (const path of ['https://www.4khd.com/offline.js', 'https://www.4khd.com/js/worker.js',
+        'https://example.org/worker.js', 'https://www.4khd.com/worker.js.backup']) {
+        const other = { scriptURL: path };
+        let removed = false;
+        const result = run4khd({ controller: other, registrations: [
+            { active: other, unregister: async () => { removed = true; return true; } }
+        ] });
+        await new Promise(setImmediate);
+        assert.equal(removed, false, path);
+        assert.deepEqual(result.events, [], path);
+    }
+});
+
 test('PixiBB removes its audited promotion call and preserves player APIs and frames', () => {
     const body = '<html><head></head><body><script>const adUrls=[];const key="pixibb_ad_cooldown";' +
         'function initAdListeners(){window.open(targetUrl, "_blank");}</script>' +
