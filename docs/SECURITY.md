@@ -46,6 +46,8 @@
 
 2026-11-16 复核发现，公开页面已改为内联加载 `/worker.js`，备用路径为 `/scss.js`，而 `/interstitial.js` 只剩注册 `/worker.js` 的入口。插件现在同时拦截这三个精确路径，注销同源、对应路径的已安装 Worker，并移除已核实的独立内联加载器及同源广告脚本标签，避免缓存脚本再次注册。仍保留 `config.js`、正常站点脚本、搜索表单和图片转换。更新时必须同时更新 LPX 与远程 JS；手机端验证及残留网站数据处理见[本次排障报告](WEB_4KHD_DIAGNOSIS_2026-11-16.md)。
 
+2026-11-22 补齐独立搜索处理：同源的 WordPress GET 搜索表单直接生成编码后的 `/search/关键词` 地址，保留页码和正常筛选参数；请求阶段也规范化根路径及 `/page/N/` 上的 `?s=` 搜索，防止查询式翻页被服务器重定向回第一页。主题已接管的浮动搜索框保持原行为；主题脚本未加载时提供按需创建的后备搜索框。搜索修复仍受 4KHD 开关控制，不处理 POST、外站表单或其他站点。详见[搜索排障与交互验证](WEB_4KHD_SEARCH_2026-11-22.md)。
+
 ## PixiBB 插件维护
 
 2026-09-13 重新检查的公开静态 HTML 显示，`hub.pixibb.com`、`sexy.pixibb.com` 与 `cosplay.pixibb.com` 使用同一类独立推广脚本：整页点击监听通过 `window.open()` 轮流打开 `/promotion/sexy-cosplay/` 与 `/promotion/sexy-girls/`，已检查的中转页再通过 `window.location.href` 跳到 `happylength.com`。开启 PixiBB 时，插件移除同时包含 `pixibb_ad_cooldown`、`adUrls`、`initAdListeners`、`window.open(targetUrl,...)` 的已识别推广脚本，拦截两个中转路径，并在页面内保护弹窗及推广链接点击。只隐藏带 `sponsored` 标记且目标为 `filmxy.vip/ref/` 的已核实横幅，不隐藏其外围内容区域。

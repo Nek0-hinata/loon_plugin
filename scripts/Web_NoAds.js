@@ -69,6 +69,34 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
         return site === 'pornhub' && /^\/_xa\/ads(?:_batch)?$/.test(url.path);
     }
 
+    // Shared by the Loon request phase and the browser submit handler. No browser globals here.
+    function fourKSearchURL(origin, path, fields) {
+        const route = /^(?:\/|\/page\/([1-9]\d*)\/?)$/.exec(path);
+        if (!route && !/^\/search\//.test(path)) return null;
+        const terms = fields.filter(field => field[0] === 's');
+        const pages = fields.filter(field => field[0] === 'paged');
+        if (terms.length !== 1 || !terms[0][1].trim() || pages.length > 1) return null;
+        const page = pages.length ? pages[0][1] : route && route[1] || '1';
+        if (!/^[1-9]\d*$/.test(page) || !Number.isSafeInteger(Number(page))) return null;
+        const query = fields.filter(field => field[0] !== 's' && field[0] !== 'paged')
+            .map(field => encodeURIComponent(field[0]) + '=' + encodeURIComponent(field[1])).join('&');
+        return origin + '/search/' + encodeURIComponent(terms[0][1]) +
+            (Number(page) > 1 ? '/page/' + Number(page) + '/' : '') + (query ? '?' + query : '');
+    }
+
+    function fourKSearchRedirect(request, url) {
+        if (request.method && request.method.toUpperCase() !== 'GET') return null;
+        if (!/^(?:\/|\/page\/[1-9]\d*\/?)$/.test(url.path)) return null;
+        const query = /\?([^#]*)/.exec(request.url);
+        if (!query) return null;
+        const decode = value => decodeURIComponent(value.replace(/\+/g, ' '));
+        const fields = query[1].split('&').filter(Boolean).map(field => {
+            const split = field.indexOf('=');
+            return [decode(split < 0 ? field : field.slice(0, split)), decode(split < 0 ? '' : field.slice(split + 1))];
+        });
+        return fourKSearchURL(url.origin, url.path, fields);
+    }
+
     function attribute(tag, name) {
         const attrs = /\s+([^\s=/>]+)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'`=<>]+)))?/g;
         let match;
@@ -222,8 +250,67 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
         }
     }
 
+    function fourKSearch(searchURL) {
+        let fallback;
+        const searchForm = (form, button) => {
+            if (!form || !form.matches('form[role="search"].wp-block-search')) return null;
+            const method = button && button.hasAttribute('formmethod') ? button.formMethod : form.method;
+            if (method.toLowerCase() !== 'get') return null;
+            const action = new URL(button && button.hasAttribute('formaction') ? button.formAction : form.action, location.href);
+            return action.origin === location.origin && form.querySelector('input[name="s"]') ? action : null;
+        };
+        document.addEventListener('submit', event => {
+            const form = event.target, button = event.submitter, action = searchForm(form, button);
+            const browsingTarget = button && button.hasAttribute('formtarget') ? button.formTarget : form.target;
+            if (event.defaultPrevented || !action || browsingTarget && browsingTarget.toLowerCase() !== '_self') return;
+            const fields = Array.from(new FormData(form), field => [field[0], typeof field[1] === 'string' ? field[1] : field[1].name]);
+            if (button && button.name && !button.disabled) fields.push([button.name, button.value]);
+            const target = searchURL(action.origin, action.pathname, fields);
+            if (!target) return;
+            event.preventDefault();
+            location.assign(target);
+        });
+        document.addEventListener('click', event => {
+            const target = event.target && event.target.closest ? event.target : event.target && event.target.parentElement;
+            const button = target && target.closest('button[type="submit"]');
+            const form = button && button.form;
+            if (fallback && !fallback.contains(target) && !(form && form.classList.contains('is-style-floating-white-search'))) fallback.hidden = true;
+            // The theme calls preventDefault when it opens its own panel. Leave that path intact.
+            if (event.defaultPrevented || !searchForm(form, button) || !form.classList.contains('is-style-floating-white-search')) return;
+            event.preventDefault();
+            if (!fallback) {
+                fallback = document.createElement('div');
+                fallback.setAttribute('data-loon-4khd-search', '');
+                fallback.style.cssText = 'position:fixed;left:0;right:0;z-index:100002;padding:16px;background:#f5f6f9;box-sizing:border-box';
+                const copy = form.cloneNode(true);
+                copy.classList.remove('is-style-floating-white-search');
+                copy.removeAttribute('id');
+                copy.style.cssText = 'max-width:750px;margin:0 auto';
+                const input = copy.querySelector('input[name="s"]');
+                input.id = 'loon-4khd-search-input';
+                input.style.display = 'block';
+                const label = copy.querySelector('label');
+                if (label) label.htmlFor = input.id;
+                fallback.appendChild(copy);
+                document.body.appendChild(fallback);
+            }
+            const header = form.closest('header');
+            const bottom = header ? header.getBoundingClientRect().bottom : 0;
+            fallback.style.top = Math.max(0, Math.min(bottom, window.innerHeight - 120)) + 'px';
+            fallback.hidden = false;
+            fallback.querySelector('input[name="s"]').focus();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && fallback && !fallback.hidden) {
+                event.preventDefault();
+                fallback.hidden = true;
+            }
+        });
+    }
+
     function payload(site) {
-        if (site === 'fourkhd') return '<script data-cfasync="false">' + FOUR_K_SCRIPT + '</script>';
+        if (site === 'fourkhd') return '<script data-cfasync="false">' + FOUR_K_SCRIPT +
+            '(' + fourKSearch.toString() + ')(' + fourKSearchURL.toString() + ');</script>';
         const css = site === 'pixibb' ? '.loon-web-noads-promotion{display:none!important}' : CSS[site];
         const guard = '(' + popupGuard.toString() + ')(' + JSON.stringify(domainsFor(site)) + ',' + (site === 'pixibb') + ');';
         return '<style>' + css + '</style><script data-cfasync="false">' + guard + '</script>';
@@ -234,9 +321,15 @@ const FOUR_K_SCRIPT = "((A,O)=>{const/**/isAdWorker=w=>{try{const/**/u=new/**/UR
             const url = address(request.url);
             const site = url && siteFor(url.host);
             if (!site || !enabled(options, site)) return {};
-            if (!response) return blockedRequest(url, site) ? {
-                response: { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: '' }
-            } : {};
+            if (!response) {
+                const search = site === 'fourkhd' && fourKSearchRedirect(request, url);
+                if (search) return { response: { status: 302, headers: {
+                    Location: search, 'Cache-Control': 'no-store', 'Content-Type': 'text/plain; charset=utf-8'
+                }, body: '' } };
+                return blockedRequest(url, site) ? {
+                    response: { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, body: '' }
+                } : {};
+            }
             const typeKey = Object.keys(response.headers || {}).find(key => key.toLowerCase() === 'content-type');
             const type = typeKey ? response.headers[typeKey] : '';
             if (type && !/^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(type)) return {};

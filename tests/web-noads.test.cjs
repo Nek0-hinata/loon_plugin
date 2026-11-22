@@ -137,7 +137,7 @@ test('4KHD retains legitimate index navigation and media popups while blocking k
     }
 });
 
-test('4KHD keeps native search forms and allows both search routes and worker configuration', () => {
+test('4KHD preserves native search markup and canonical search routes and worker configuration', () => {
     // Reduced from the public home/search markup inspected on 2026-09-14.
     const form = '<form role="search" method="get" action="https://www.4khd.com/" class="wp-block-search">' +
         '<input type="search" id="wp-block-search__input-1" name="s" value="test" required />' +
@@ -146,7 +146,8 @@ test('4KHD keeps native search forms and allows both search routes and worker co
     for (const url of ['https://www.4khd.com/', 'https://www.4khd.com/?s=test',
         'https://www.4khd.com/?s=%E6%B5%8B%E8%AF%95&paged=2', 'https://www.4khd.com/search/test',
         'https://www.4khd.com/search/test/page/2/']) {
-        assert.deepEqual(stage(url, null), {}, url);
+        if (url.includes('?s=')) assert.equal(stage(url, null).response.status, 302, url);
+        else assert.deepEqual(stage(url, null), {}, url);
         const result = rewrite(url, page);
         assert.ok(result.includes(form), url);
         assert.ok(result.includes('<script src="/js/config.js"></script>'), url);
@@ -157,6 +158,44 @@ test('4KHD keeps native search forms and allows both search routes and worker co
         assert.deepEqual(stage(url, null), {}, url);
         assert.deepEqual(stage(url, { body: 'const config={html:"<head>"};',
             headers: { 'Content-Type': 'application/javascript' } }), {}, url);
+    }
+});
+
+test('4KHD search normalization preserves keywords, filters and page numbers through LPX rules', () => {
+    const cases = [
+        ['https://www.4khd.com/?s=Pure+Media', 'https://www.4khd.com/search/Pure%20Media'],
+        ['https://4khd.com/?paged=2&s=cosplay', 'https://4khd.com/search/cosplay/page/2/'],
+        ['https://www.4khd.com/page/3/?s=cosplay', 'https://www.4khd.com/search/cosplay/page/3/'],
+        ['https://www.4khd.com/?s=test&paged=1', 'https://www.4khd.com/search/test'],
+        ['https://www.4khd.com/?lang=zh&s=cat+%26+dog&filter=x%26y&filter=z#old',
+            'https://www.4khd.com/search/cat%20%26%20dog?lang=zh&filter=x%26y&filter=z']
+    ];
+    for (const term of ['写真', '写真 + cosplay', 'test?#', 'cosplay/', '100%', '😀', '\r\nLocation: https://example.org/']) {
+        cases.push(['https://www.4khd.com/?s=' + encodeURIComponent(term), 'https://www.4khd.com/search/' + encodeURIComponent(term)]);
+    }
+    for (const [url, expected] of cases) {
+        const response = stage(url, null).response;
+        assert.equal(response.status, 302, url);
+        assert.equal(response.headers.Location, expected, url);
+        assert.equal(response.headers['Cache-Control'], 'no-store');
+        assert.equal(response.body, '');
+        assert.deepEqual(stage(expected, null), {}, 'canonical URLs must not loop');
+        assert.deepEqual(stage(url, null, { fourkhd: false }), {}, 'switch: ' + url);
+    }
+});
+
+test('4KHD search normalization leaves ambiguous input, POST, APIs and other sites untouched', () => {
+    for (const path of ['/?s=', '/?s=+++', '/?s=%E0%A4', '/?s=a&s=b', '/?s=a&paged=0',
+        '/?s=a&paged=-1', '/?s=a&paged=2&paged=3', '/?s=a&paged=9007199254740992',
+        '/?page=2', '/help?s=a', '/wp-json/search?s=a', '/wp-admin/?s=a', '/?not_s=a']) {
+        const url = 'https://www.4khd.com' + path;
+        assert.deepEqual(stage(url, null), {}, path);
+        assert.deepEqual(handle({ url }, null, { fourkhd: true }), {}, path);
+    }
+    const url = 'https://www.4khd.com/?s=cosplay&paged=2';
+    assert.deepEqual(handle({ url, method: 'POST' }, null, { fourkhd: true }), {});
+    for (const host of ['example.org', 'jable.tv', 'www.4khd.com.example.org', 'm.4khd.com']) {
+        assert.deepEqual(stage('https://' + host + '/?s=cosplay&paged=2', null), {}, host);
     }
 });
 
