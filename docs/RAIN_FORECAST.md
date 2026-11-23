@@ -52,9 +52,13 @@ https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/web/Rain_Forecast
 https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/plugins/Caiyun_Radar_Diagnostics.lpx
 ```
 
-安装并启用后，打开彩云 App 的降水图、切换 3h / 48h，查看 Loon 中“彩云降水接口结构”的脚本日志，筛选以 `[Rain Forecast] Native schema` 开头的行。诊断仅覆盖已知的 `api` / `wrapper` 域名下 `radar`、`nafp`、`satellite` 路径。新版若使用其他路径或无法 MITM，可能没有日志；这不等于没有相关请求。
+安装并启用后，打开彩云 App 的降水图、切换 3h / 48h，查看 Loon 中“彩云降水接口结构”的脚本日志，筛选以 `[Rain Forecast] Native schema` 开头的行。诊断仅覆盖已知的 `api` / `wrapper` 域名下 `radar`、`nafp`、`satellite` 路径，支持 `v2`、`v2.6` 等版本格式。新版若使用其他路径或无法 MITM，可能没有日志；这不等于没有相关请求。
 
-日志只含接口类别、HTTP 状态和白名单字段的类型/数组长度；不包含请求头、查询参数、完整 URL、坐标、字段内容或凭据。它不会更改原响应，也不会保存或上传日志。诊断完成后可停用或删除此插件。
+日志包含固定的域名/接口类别、脱敏路由模板、HTTP 状态、归类后的 Content-Type、正文字符数，以及白名单字段的类型和数组长度。路由中的版本号统一显示为 `:version`；仅保留 `origin_images`、`forecast_images`、`images` 三种固定端点名称，其他路径段显示为 `:path`。不包含请求头、查询参数、完整 URL、坐标、字段内容或凭据。
+
+数组最多查看前 4 项的类型，可识别图片 URL、时间戳和边界组成的元组，但不会输出这些值。`omitted` 表示未展开的数组项或未报告的对象字段数量；结构最多展开 5 层、300 个节点，超出节点预算显示 `truncated`。超过 1,048,576 个字符或无法解析的正文只记录响应元数据，不解析结构。这些限制仍可能隐藏适配所需的信息。
+
+诊断不会更改原响应，也不会主动上传或另行保存日志；Loon 可能保留 `console.log` 输出，请按 Loon 的日志设置管理和清理。诊断完成后可停用或删除此插件。
 
 继续适配时，先提供精确 App 版本号及上述经过裁剪的日志即可。**不要分享完整抓包、Token、Cookie 或 Authorization 头。** 结构日志可能仍不足以判断图像投影和时间含义，需进一步核对；当前不承诺原生替换可行。
 

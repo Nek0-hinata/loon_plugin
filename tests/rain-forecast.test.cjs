@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const { render } = require('../scripts/Rain_Forecast.js');
+const { render, shape } = require('../scripts/Rain_Forecast.js');
 const html = fs.readFileSync(path.join(__dirname, '../web/Rain_Forecast.html'), 'utf8');
 const source = fs.readFileSync(path.join(__dirname, '../scripts/Rain_Forecast.js'), 'utf8');
 const pageURL = 'https://raw.githubusercontent.com/Nek0-hinata/loon_plugin/main/web/Rain_Forecast.html';
@@ -69,6 +69,83 @@ test('native diagnostics preserve the full upstream response and never log crede
   assert.match(logs[0], /"images"/);
   assert.doesNotMatch(logs[0], /SECRET|PRIVATE|39\.9042|1792472400|auth_key|authorization|https:/);
   assert.doesNotThrow(() => render({ url: 'https://api.cyapi.cn/v1/radar/images' }, response('binary'), {}, () => {}));
+});
+
+test('native diagnostics accept decimal versions but keep both script and plugin scope narrow', () => {
+  const plugin = fs.readFileSync(path.join(__dirname, '../plugins/Caiyun_Radar_Diagnostics.lpx'), 'utf8');
+  const rule = new RegExp(plugin.match(/^http-response (\S+) script-path=/m)[1]);
+  const included = ['https://api.cyapi.cn/v2.6/radar/forecast_images',
+    'https://wrapper.caiyunapp.com/v2.3/nafp/origin_images?token=QUERY-SECRET',
+    'https://api.caiyunapp.com/v2/satellite'];
+  const excluded = ['https://api.cyapi.cn.evil.test/v2.6/radar/images',
+    'https://unknown.cyapi.cn/v2.6/radar/images', 'https://api.cyapi.cn/v2.6/user/detail',
+    'https://api.cyapi.cn/v2.6/radar_other/images', 'https://api.cyapi.cn/v2.6.1x/radar/images'];
+  for (const [urls, expected] of [[included, 1], [excluded, 0]]) {
+    for (const url of urls) {
+      const logs = [];
+      assert.equal(rule.test(url), !!expected, url);
+      assert.deepEqual(render({ url }, response('{}'), {}, message => logs.push(message)), {});
+      assert.equal(logs.length, expected, url);
+    }
+  }
+});
+
+test('native metadata uses fixed route and MIME labels without leaking path or header values', () => {
+  const logs = [];
+  const upstream = { status: 'HTTP/2 206 Partial Content', body: '{"status":"PAYLOAD-SECRET"}',
+    headers: { 'Content-Type': 'application/json; boundary=HEADER-SECRET', Authorization: 'Bearer AUTH-SECRET' } };
+  const original = JSON.stringify(upstream);
+  render({ url: 'https://api.cyapi.cn/v2.6/radar/PATH-SECRET/39.9042?token=QUERY-SECRET' }, upstream, {}, message => logs.push(message));
+  const record = JSON.parse(logs[0].split('Native schema ')[1]);
+  assert.deepEqual({ host: record.host, category: record.category, route: record.route, status: record.status,
+    contentType: record.contentType, bodyCharacters: record.bodyCharacters }, {
+    host: 'api.cyapi.cn', category: 'radar', route: '/v:version/radar/:path/:path', status: 206,
+    contentType: 'application/json', bodyCharacters: upstream.body.length
+  });
+  assert.doesNotMatch(logs[0], /SECRET|39\.9042|2\.6|Authorization|boundary|https:/);
+  assert.equal(JSON.stringify(upstream), original);
+  for (const [mime, expected] of [['application/PRIVATE-SECRET', 'other'], ['application/vnd.example+json', 'application/*+json']]) {
+    const messages = [];
+    render({ url: 'https://wrapper.cyapi.cn/v1/radar/forecast_images/PATH-SECRET' },
+      { statusCode: 200, body: null, headers: { 'content-type': mime } }, {}, message => messages.push(message));
+    const diagnostic = JSON.parse(messages[0].split('Native schema ')[1]);
+    assert.equal(diagnostic.route, '/v:version/radar/forecast_images/:path');
+    assert.equal(diagnostic.status, 200);
+    assert.equal(diagnostic.contentType, expected);
+    assert.equal(diagnostic.bodyCharacters, null);
+    assert.doesNotMatch(messages[0], /PRIVATE|SECRET|vnd\.example/);
+  }
+});
+
+test('native schema describes tuple positions and counts every omitted key without scalar values', () => {
+  const data = Object.fromEntries(Array.from({ length: 65 }, (_, i) => ['PRIVATE-KEY-' + i, 'SECRET']));
+  data.images = [['https://cdn.example/SECRET', 1792472400, [39, 115, 41, 118], null, 'SECRET']];
+  const result = shape(data, 5);
+  assert.equal(result.omitted, 65);
+  const tuple = result.fields.images.items[0];
+  assert.deepEqual(tuple.items.slice(0, 2), ['string', 'number']);
+  assert.deepEqual(tuple.items[2], { type: 'array', length: 4, items: ['number', 'number', 'number', 'number'], omitted: 0 });
+  assert.equal(tuple.items[3], 'null');
+  assert.equal(tuple.omitted, 1);
+  assert.doesNotMatch(JSON.stringify(result), /SECRET|PRIVATE|1792472400|https:/);
+  let nested = {};
+  for (let i = 0; i < 4; i++) nested = { data: Array(4).fill(nested), images: Array(4).fill(nested) };
+  assert.match(JSON.stringify(shape(nested, 20)), /truncated/);
+});
+
+test('native diagnostics report unavailable, non-JSON and oversized bodies without copying them', () => {
+  for (const [body, expected] of [[null, 'body unavailable or too large'], ['SECRET', 'not JSON'],
+    ['x'.repeat(1048577), 'body unavailable or too large']]) {
+    const logs = [];
+    const upstream = { status: 'SECRET', body, headers: {} };
+    assert.deepEqual(render({ url: 'https://api.cyapi.cn/v2.6/satellite' }, upstream, {}, message => logs.push(message)), {});
+    const record = JSON.parse(logs[0].split('Native schema ')[1]);
+    assert.equal(record.status, 0);
+    assert.equal(record.contentType, 'unavailable');
+    assert.equal(record.schema, expected);
+    assert.equal(record.bodyCharacters, typeof body === 'string' ? body.length : null);
+    assert.doesNotMatch(logs[0], /SECRET|xxx/);
+  }
 });
 
 test('runtime calls $done once and passes through unsupported input', () => {
